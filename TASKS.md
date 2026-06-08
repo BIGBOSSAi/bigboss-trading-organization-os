@@ -12,11 +12,11 @@
 - [x] Prepared repository ignore rules for GitHub publishing.
 - [x] Connected local repository to GitHub remote.
 - [x] Pushed initial design foundation to GitHub.
+- [x] Review the written design spec.
+- [x] Create implementation plan.
 
 ## Next
 
-- [ ] Review the written design spec.
-- [ ] Create implementation plan.
 - [ ] Choose stack for V1 web app.
 - [ ] Scaffold project structure.
 - [ ] Build first working operator cockpit screen.

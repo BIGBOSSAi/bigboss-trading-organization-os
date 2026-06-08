@@ -10,11 +10,12 @@
 - [x] Saved PRD summary.
 - [x] Saved design spec.
 - [x] Prepared repository ignore rules for GitHub publishing.
+- [x] Connected local repository to GitHub remote.
+- [x] Pushed initial design foundation to GitHub.
 
 ## Next
 
 - [ ] Review the written design spec.
-- [ ] Connect local repository to GitHub remote.
 - [ ] Create implementation plan.
 - [ ] Choose stack for V1 web app.
 - [ ] Scaffold project structure.

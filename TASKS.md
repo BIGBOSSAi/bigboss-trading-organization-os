@@ -17,10 +17,13 @@
 - [x] Choose stack for V1 web app.
 - [x] Scaffold project structure.
 - [x] Build first working operator cockpit screen.
+- [x] Merge operator cockpit V1 into `main`.
+- [x] Clone and inspect Hermes Desktop OS1.
+- [x] Document Hermes integration research.
 
 ## Next
 
-- [ ] Merge `codex/operator-cockpit-v1` back into `main`.
+- [ ] Plan HermesBridge V1 backend integration.
 - [ ] Add durable shared memory storage.
 - [ ] Add richer agent output templates.
 - [ ] Add approval workflow state.

@@ -14,3 +14,5 @@
 - Added deterministic Brain Router with Vitest coverage.
 - Built the first operator cockpit screen.
 - Verified with `npm audit --audit-level=moderate`, `npm test`, and `npm run build`.
+- Merged operator cockpit V1 into `main` and pushed it to GitHub.
+- Cloned and researched Hermes Desktop OS1 as a candidate local AI brain layer.

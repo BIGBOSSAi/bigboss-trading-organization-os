@@ -15,6 +15,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `AGENTS.md`: Codex operating instructions for this project.
 - `docs/PRD.md`: product brief.
 - `docs/superpowers/specs/2026-06-08-bigboss-trading-organization-os-design.md`: approved design spec.
+- `docs/research/hermes-desktop-os1-integration.md`: Hermes OS1 integration research.
 - `outputs/`: user-facing deliverables.
 - `work/`: drafts, scratch files, and intermediate work.
 - `.superpowers/brainstorm/`: local brainstorming companion artifacts.
@@ -40,3 +41,4 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - V1 should focus on trading organization workflows, not the architecture/construction opportunity.
 - The first implementation slice should create a working operator cockpit and agent routing model before deeper integrations.
 - Existing dashboard example at `E:\1 Pending Projects\BIGBoss_Trader_OS_Operator_Dashboard.html` is a visual/product reference, not source code to overwrite.
+- Hermes Desktop OS1 is cloned under `work/hermes-desktop-os1` for research only; do not vendor it into this app without a separate integration plan.

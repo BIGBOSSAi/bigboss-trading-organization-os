@@ -157,6 +157,11 @@ button:hover {
   background: #f0ca52;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .route-meta {
   display: flex;
   flex-wrap: wrap;

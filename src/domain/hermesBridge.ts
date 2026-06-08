@@ -49,6 +49,7 @@ export interface HermesTaskRecord {
 export interface HermesBridgeOptions {
   now?: () => Date;
   probeOllama?: ModelProviderProbe;
+  providerTimeoutMs?: number;
 }
 
 const defaultMemoryFolders: MemoryFolder[] = [
@@ -127,9 +128,10 @@ async function defaultOllamaProbe(): Promise<Pick<ModelProviderHealth, "status" 
 export function createHermesBridge(options: HermesBridgeOptions = {}) {
   const now = options.now ?? (() => new Date());
   const probeOllama = options.probeOllama ?? defaultOllamaProbe;
+  const providerTimeoutMs = options.providerTimeoutMs ?? 1200;
 
   async function checkProviders(): Promise<ProviderStatusReport> {
-    const ollamaResult = await probeOllama();
+    const ollamaResult = await probeWithTimeout(probeOllama, providerTimeoutMs);
     const ollamaProvider: ModelProviderHealth = {
       id: "ollama-local",
       label: "Local Ollama",
@@ -142,9 +144,9 @@ export function createHermesBridge(options: HermesBridgeOptions = {}) {
     return { primary, providers };
   }
 
-  async function createTask(command: string): Promise<HermesTaskRecord> {
+  async function createTask(command: string, checkedProviders?: ProviderStatusReport): Promise<HermesTaskRecord> {
     const route = routeCommand(command);
-    const providerReport = await checkProviders();
+    const providerReport = checkedProviders ?? (await checkProviders());
     const approval = buildApprovalGate(route);
     const createdAt = now().toISOString();
 
@@ -167,6 +169,34 @@ export function createHermesBridge(options: HermesBridgeOptions = {}) {
     checkProviders,
     createTask,
   };
+}
+
+async function probeWithTimeout(
+  probe: ModelProviderProbe,
+  timeoutMs: number,
+): Promise<Pick<ModelProviderHealth, "status" | "detail">> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      probe(),
+      new Promise<Pick<ModelProviderHealth, "status" | "detail">>((resolve) => {
+        timeoutId = setTimeout(() => {
+          resolve({
+            status: "offline",
+            detail: `Ollama provider check timed out after ${timeoutMs}ms.`,
+          });
+        }, timeoutMs);
+      }),
+    ]);
+  } catch {
+    return {
+      status: "offline",
+      detail: "Ollama provider check failed before a usable response was returned.",
+    };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 function buildApprovalGate(route: RouteResult): ApprovalGate {

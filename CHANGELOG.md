@@ -18,3 +18,4 @@
 - Cloned and researched Hermes Desktop OS1 as a candidate local AI brain layer.
 - Added a local-first Hermes and MiMo installation strategy for running the AI brain from the desktop before any paid hosting.
 - Added HermesBridge V1 with provider health checks, local memory folder manifest, approval-gated task records, and cockpit provider status UI.
+- Stabilized command routing so offline or stuck model providers time out quickly, failed probes fall back to the mock provider, and the route button shows a loading state instead of feeling unresponsive.

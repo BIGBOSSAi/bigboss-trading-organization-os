@@ -26,6 +26,47 @@ describe("createHermesBridge", () => {
     expect(task.approval.reasons).toContain("high-risk trading or publishing workflow");
   });
 
+  it("can create a task from an already checked provider report without probing again", async () => {
+    let probeCalls = 0;
+    const bridge = createHermesBridge({
+      probeOllama: async () => {
+        probeCalls += 1;
+        return { status: "healthy", detail: "Ready" };
+      },
+    });
+    const providerReport = await bridge.checkProviders();
+
+    const task = await bridge.createTask("Build a liquidity lesson", providerReport);
+
+    expect(task.providerId).toBe("ollama-local");
+    expect(probeCalls).toBe(1);
+  });
+
+  it("marks Ollama offline when the provider probe fails", async () => {
+    const bridge = createHermesBridge({
+      probeOllama: async () => {
+        throw new Error("Provider API request failed");
+      },
+    });
+
+    const status = await bridge.checkProviders();
+
+    expect(status.primary.id).toBe("mock");
+    expect(status.providers.find((provider) => provider.id === "ollama-local")?.status).toBe("offline");
+  });
+
+  it("marks Ollama offline when the provider probe times out", async () => {
+    const bridge = createHermesBridge({
+      providerTimeoutMs: 1,
+      probeOllama: () => new Promise(() => undefined),
+    });
+
+    const status = await bridge.checkProviders();
+
+    expect(status.primary.id).toBe("mock");
+    expect(status.providers.find((provider) => provider.id === "ollama-local")?.detail).toContain("timed out");
+  });
+
   it("exposes the local memory folders HermesBridge owns", () => {
     const bridge = createHermesBridge();
 

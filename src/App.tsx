@@ -16,6 +16,7 @@ export default function App() {
   const [routes, setRoutes] = useState<RouteResult[]>([]);
   const [tasks, setTasks] = useState<HermesTaskRecord[]>([]);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -42,11 +43,23 @@ export default function App() {
   async function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = command.trim();
-    if (!trimmed) return;
-    const task = await hermesBridge.createTask(trimmed);
-    setTasks((current) => [task, ...current].slice(0, 6));
-    setRoutes((current) => [task.route, ...current].slice(0, 6));
-    setProviderReport(await hermesBridge.checkProviders());
+    if (!trimmed || isRouting) return;
+    setIsRouting(true);
+
+    try {
+      const checkedProviders = await hermesBridge.checkProviders();
+      const task = await hermesBridge.createTask(trimmed, checkedProviders);
+      setProviderReport(checkedProviders);
+      setTasks((current) => {
+        if (current[0]?.command === task.command && current[0]?.agentId === task.agentId) {
+          return current;
+        }
+        return [task, ...current].slice(0, 6);
+      });
+      setRoutes((current) => [task.route, ...current].slice(0, 6));
+    } finally {
+      setIsRouting(false);
+    }
   }
 
   return (
@@ -71,7 +84,9 @@ export default function App() {
             rows={5}
           />
           <div className="command-actions">
-            <button type="submit">Route Command</button>
+            <button type="submit" disabled={isRouting || !command.trim()}>
+              {isRouting ? "Routing..." : "Route Command"}
+            </button>
             <select value={command} onChange={(event) => setCommand(event.target.value)}>
               {starterCommands.map((starter) => (
                 <option key={starter} value={starter}>

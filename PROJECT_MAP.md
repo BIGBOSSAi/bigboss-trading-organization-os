@@ -42,6 +42,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 
 - Primary safe fallback: mock provider.
 - Local Ollama health endpoint: `http://127.0.0.1:11434/api/tags`.
+- Provider checks time out quickly so the command button does not hang when local or cloud providers are unavailable.
 - FCC is represented as a backup-only provider because upstream cloud provider requests may fail.
 - MiMo is represented as a candidate provider, not installed or active in V1.
 

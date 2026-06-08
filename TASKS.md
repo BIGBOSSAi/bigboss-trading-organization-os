@@ -23,6 +23,7 @@
 - [x] Plan local-first Hermes and MiMo installation strategy.
 - [x] Build HermesBridge V1 backend integration.
 - [x] Connect a local model runtime health check.
+- [x] Stabilize command routing clicks with provider timeout and visible loading state.
 
 ## Next
 

@@ -22,7 +22,13 @@ export interface RouteResult {
 const agentById = Object.fromEntries(agents.map((agent) => [agent.id, agent])) as Record<string, Agent>;
 
 const matchAny = (command: string, keywords: string[]) =>
-  keywords.some((keyword) => command.includes(keyword));
+  keywords.some((keyword) => {
+    if (/^[a-z0-9]+$/i.test(keyword)) {
+      return new RegExp(`\\b${keyword}\\b`, "i").test(command);
+    }
+
+    return command.includes(keyword);
+  });
 
 export function routeCommand(rawCommand: string): RouteResult {
   const command = rawCommand.trim().toLowerCase();

@@ -23,4 +23,9 @@ describe("routeCommand", () => {
     expect(result.intent).toBe("content");
     expect(result.approvalRequired).toBe(true);
   });
+
+  it("does not route words containing ea to Forge as an expert advisor keyword", () => {
+    expect(routeCommand("Research audience pain points around liquidity").agent.id).toBe("scout");
+    expect(routeCommand("Create an offer for BIGBoss Trader OS").agent.id).toBe("launch");
+  });
 });

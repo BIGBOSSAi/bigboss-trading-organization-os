@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { generateAgentOutput } from "./agentOutputs";
 import { createHermesBridge } from "./hermesBridge";
 import { createLocalBrainStore } from "./localBrainStore";
 
@@ -78,5 +79,17 @@ describe("createLocalBrainStore", () => {
 
     expect(loadedTask.workflow.status).toBe("needs-approval");
     expect(loadedTask.workflow.history[0]?.action).toBe("created");
+  });
+
+  it("saves and loads agent output drafts", async () => {
+    const storage = new MemoryStorage();
+    const store = createLocalBrainStore(storage);
+    const bridge = createHermesBridge({ now: () => new Date("2026-06-08T20:33:00.000Z") });
+    const task = await bridge.createTask("Write a LinkedIn post about central banks");
+    const output = generateAgentOutput(task);
+
+    store.saveOutputs([output]);
+
+    expect(store.loadOutputs()).toEqual([output]);
   });
 });

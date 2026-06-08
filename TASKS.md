@@ -26,10 +26,12 @@
 - [x] Stabilize command routing clicks with provider timeout and visible loading state.
 - [x] Persist HermesBridge task records and memory entries to browser storage.
 - [x] Add approval workflow state and task detail controls.
+- [x] Add output workspace for agent-generated drafts.
+- [x] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.
 
 ## Next
 
 - [ ] Add durable shared memory storage.
-- [ ] Add richer agent output templates.
-- [ ] Add output workspace for agent-generated drafts.
-- [ ] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.
+- [ ] Add richer editable agent output templates.
+- [ ] Add export/copy actions for generated drafts.
+- [ ] Add provider-backed generation when a local model is healthy.

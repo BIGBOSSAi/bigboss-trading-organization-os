@@ -21,3 +21,5 @@
 - Stabilized command routing so offline or stuck model providers time out quickly, failed probes fall back to the mock provider, and the route button shows a loading state instead of feeling unresponsive.
 - Added browser-local persistence for HermesBridge task records and memory entries so the cockpit can remember recent routed work after refresh.
 - Added task workflow states, approval/rejection/completion transitions, task detail controls, and migration for older saved task records.
+- Added deterministic per-agent output drafts and an Agent Output Workspace for Dean, Ledger, Forge, Voice, Scout, and Launch.
+- Fixed router keyword matching so words containing `ea` no longer get misrouted as Expert Advisor bot work.

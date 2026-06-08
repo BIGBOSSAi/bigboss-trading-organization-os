@@ -1,8 +1,10 @@
 import type { AgentId } from "./agents";
+import type { AgentOutputDraft } from "./agentOutputs";
 import type { HermesTaskRecord, MemoryFolder, TaskWorkflow } from "./hermesBridge";
 
 const taskStorageKey = "bigboss.hermes.tasks.v1";
 const memoryStorageKey = "bigboss.hermes.memory.v1";
+const outputStorageKey = "bigboss.hermes.outputs.v1";
 
 export type MemoryFolderId = MemoryFolder["id"];
 
@@ -18,6 +20,7 @@ export interface LocalMemoryEntry {
 export interface LocalBrainSnapshot {
   tasks: HermesTaskRecord[];
   memoryEntries: LocalMemoryEntry[];
+  outputs: AgentOutputDraft[];
 }
 
 export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setItem">) {
@@ -37,10 +40,19 @@ export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setIte
     storage.setItem(memoryStorageKey, JSON.stringify(entries.slice(0, 50)));
   }
 
+  function loadOutputs(): AgentOutputDraft[] {
+    return readArray<AgentOutputDraft>(storage, outputStorageKey);
+  }
+
+  function saveOutputs(outputs: AgentOutputDraft[]): void {
+    storage.setItem(outputStorageKey, JSON.stringify(outputs.slice(0, 20)));
+  }
+
   function loadSnapshot(): LocalBrainSnapshot {
     return {
       tasks: loadTasks(),
       memoryEntries: loadMemoryEntries(),
+      outputs: loadOutputs(),
     };
   }
 
@@ -58,9 +70,11 @@ export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setIte
   return {
     createMemoryEntryFromTask,
     loadMemoryEntries,
+    loadOutputs,
     loadSnapshot,
     loadTasks,
     saveMemoryEntries,
+    saveOutputs,
     saveTasks,
   };
 }

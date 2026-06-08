@@ -210,6 +210,55 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.workspace-grid {
+  display: grid;
+  margin-bottom: 18px;
+}
+
+.workspace-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.output-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.output-section {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.output-section ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.guardrail-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.guardrail-strip span {
+  border: 1px solid rgba(220, 53, 69, 0.45);
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #ffb4bd;
+  background: rgba(220, 53, 69, 0.08);
+  font-size: 13px;
+}
+
 .provider-list {
   display: grid;
   gap: 10px;
@@ -316,6 +365,7 @@ button:disabled {
 @media (max-width: 1100px) {
   .command-grid,
   .bridge-grid,
+  .output-sections,
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -327,6 +377,7 @@ button:disabled {
   }
 
   .topbar,
+  .workspace-heading,
   .command-actions,
   .workflow-actions {
     grid-template-columns: 1fr;

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { generateAgentOutput, type AgentOutputDraft } from "./domain/agentOutputs";
 import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
@@ -20,6 +21,7 @@ export default function App() {
   const [memoryEntries, setMemoryEntries] = useState<LocalMemoryEntry[]>(
     () => localBrainStore?.loadSnapshot().memoryEntries ?? [],
   );
+  const [outputs, setOutputs] = useState<AgentOutputDraft[]>(() => localBrainStore?.loadSnapshot().outputs ?? []);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
 
@@ -35,6 +37,7 @@ export default function App() {
   }, []);
 
   const activeTask = tasks[0];
+  const activeOutput = outputs.find((output) => output.taskId === activeTask?.id) ?? outputs[0];
   const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
   const openTasks = useMemo(
     () =>
@@ -55,6 +58,7 @@ export default function App() {
       const checkedProviders = await hermesBridge.checkProviders();
       const task = await hermesBridge.createTask(trimmed, checkedProviders);
       const memoryEntry = localBrainStore?.createMemoryEntryFromTask(task);
+      const output = generateAgentOutput(task);
       setProviderReport(checkedProviders);
       setTasks((current) => {
         if (current[0]?.command === task.command && current[0]?.agentId === task.agentId) {
@@ -74,6 +78,14 @@ export default function App() {
           return nextEntries;
         });
       }
+      setOutputs((current) => {
+        if (current.some((draft) => draft.id === output.id)) {
+          return current;
+        }
+        const nextOutputs = [output, ...current].slice(0, 12);
+        localBrainStore?.saveOutputs(nextOutputs);
+        return nextOutputs;
+      });
       setRoutes((current) => [task.route, ...current].slice(0, 6));
     } finally {
       setIsRouting(false);
@@ -189,6 +201,42 @@ export default function App() {
           <p className="panel-label">Local Memory</p>
           <h2>{memoryEntries.length} Saved</h2>
           <p>Task records and memory entries are stored in this browser only.</p>
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel output-workspace">
+          <p className="panel-label">Agent Output Workspace</p>
+          {activeOutput ? (
+            <>
+              <div className="workspace-heading">
+                <div>
+                  <h2>{activeOutput.title}</h2>
+                  <p>{activeOutput.summary}</p>
+                </div>
+                <span className="status-pill">{activeOutput.agentId}</span>
+              </div>
+              <div className="output-sections">
+                {activeOutput.sections.map((section) => (
+                  <article className="output-section" key={section.heading}>
+                    <h3>{section.heading}</h3>
+                    <ul>
+                      {section.bullets.map((bullet) => (
+                        <li key={bullet}>{bullet}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+              <div className="guardrail-strip">
+                {activeOutput.guardrails.map((guardrail) => (
+                  <span key={guardrail}>{guardrail}</span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p>Route a command to generate the first structured agent draft.</p>
+          )}
         </section>
       </section>
 

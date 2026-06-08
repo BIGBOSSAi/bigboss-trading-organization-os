@@ -16,6 +16,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `docs/PRD.md`: product brief.
 - `docs/superpowers/specs/2026-06-08-bigboss-trading-organization-os-design.md`: approved design spec.
 - `docs/research/hermes-desktop-os1-integration.md`: Hermes OS1 integration research.
+- `docs/research/local-hermes-mimo-installation.md`: local-first Hermes and MiMo installation strategy.
 - `outputs/`: user-facing deliverables.
 - `work/`: drafts, scratch files, and intermediate work.
 - `.superpowers/brainstorm/`: local brainstorming companion artifacts.

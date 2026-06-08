@@ -20,10 +20,12 @@
 - [x] Merge operator cockpit V1 into `main`.
 - [x] Clone and inspect Hermes Desktop OS1.
 - [x] Document Hermes integration research.
+- [x] Plan local-first Hermes and MiMo installation strategy.
 
 ## Next
 
-- [ ] Plan HermesBridge V1 backend integration.
+- [ ] Build HermesBridge V1 backend integration.
+- [ ] Connect a local model runtime health check.
 - [ ] Add durable shared memory storage.
 - [ ] Add richer agent output templates.
 - [ ] Add approval workflow state.

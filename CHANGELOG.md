@@ -16,3 +16,4 @@
 - Verified with `npm audit --audit-level=moderate`, `npm test`, and `npm run build`.
 - Merged operator cockpit V1 into `main` and pushed it to GitHub.
 - Cloned and researched Hermes Desktop OS1 as a candidate local AI brain layer.
+- Added a local-first Hermes and MiMo installation strategy for running the AI brain from the desktop before any paid hosting.

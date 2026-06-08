@@ -28,6 +28,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - TypeScript
 - Vitest
 - Local deterministic Brain Router for V1
+- HermesBridge V1 domain layer with mock, Ollama local, FCC backup, and MiMo candidate provider statuses
 - Local browser state only; no API keys, live trading, or external publishing integrations yet
 
 ## Known Commands
@@ -36,6 +37,13 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Test: `npm test`
 - Build: `npm run build`
 - Deploy: unknown.
+
+## Local Model Provider Notes
+
+- Primary safe fallback: mock provider.
+- Local Ollama health endpoint: `http://127.0.0.1:11434/api/tags`.
+- FCC is represented as a backup-only provider because upstream cloud provider requests may fail.
+- MiMo is represented as a candidate provider, not installed or active in V1.
 
 ## Assumptions
 

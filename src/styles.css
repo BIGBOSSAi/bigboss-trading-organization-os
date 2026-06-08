@@ -186,6 +186,55 @@ button:hover {
   align-items: start;
 }
 
+.bridge-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.provider-list {
+  display: grid;
+  gap: 10px;
+}
+
+.provider-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.provider-row p {
+  margin-bottom: 0;
+}
+
+.provider-status {
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #090909;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-healthy {
+  background: #9ee6af;
+}
+
+.status-limited {
+  background: #ffd38a;
+}
+
+.status-offline,
+.status-not-installed {
+  background: #ffb4bd;
+}
+
 .agent-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -228,8 +277,23 @@ button:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.memory-list strong,
+.memory-list span {
+  display: block;
+}
+
+.memory-list strong {
+  color: #f7f4ea;
+}
+
+.memory-list span {
+  color: #8d8674;
+  font-size: 13px;
+}
+
 @media (max-width: 1100px) {
   .command-grid,
+  .bridge-grid,
   .dashboard-grid {
     grid-template-columns: 1fr;
   }

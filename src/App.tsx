@@ -1,5 +1,6 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { agents, productVault } from "./domain/agents";
+import { createHermesBridge, type HermesTaskRecord, type ProviderStatusReport } from "./domain/hermesBridge";
 import { routeCommand, type RouteResult } from "./domain/router";
 
 const starterCommands = [
@@ -8,11 +9,27 @@ const starterCommands = [
   "Write a LinkedIn post about central banks moving markets",
 ];
 
+const hermesBridge = createHermesBridge();
+
 export default function App() {
   const [command, setCommand] = useState(starterCommands[0]);
   const [routes, setRoutes] = useState<RouteResult[]>([]);
+  const [tasks, setTasks] = useState<HermesTaskRecord[]>([]);
+  const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
 
-  const activeRoute = routes[0] ?? routeCommand(command);
+  useEffect(() => {
+    let active = true;
+    hermesBridge.checkProviders().then((report) => {
+      if (active) setProviderReport(report);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activeTask = tasks[0];
+  const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
   const openTasks = useMemo(
     () =>
       activeRoute.nextActions.map((action, index) => ({
@@ -22,11 +39,14 @@ export default function App() {
     [activeRoute],
   );
 
-  function submitCommand(event: FormEvent<HTMLFormElement>) {
+  async function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = command.trim();
     if (!trimmed) return;
-    setRoutes((current) => [routeCommand(trimmed), ...current].slice(0, 6));
+    const task = await hermesBridge.createTask(trimmed);
+    setTasks((current) => [task, ...current].slice(0, 6));
+    setRoutes((current) => [task.route, ...current].slice(0, 6));
+    setProviderReport(await hermesBridge.checkProviders());
   }
 
   return (
@@ -36,7 +56,9 @@ export default function App() {
           <p className="eyebrow">BIGBoss Trading Organization OS</p>
           <h1>Agent Workforce Command Center</h1>
         </div>
-        <div className="status-pill">Local-first V1</div>
+        <div className="status-pill">
+          {providerReport ? `Provider: ${providerReport.primary.label}` : "Checking local brain"}
+        </div>
       </header>
 
       <section className="command-grid">
@@ -68,7 +90,38 @@ export default function App() {
             <span>{activeRoute.intent.replace("_", " ")}</span>
             <span className={`risk-${activeRoute.riskLevel}`}>{activeRoute.riskLevel} risk</span>
             <span>{activeRoute.approvalRequired ? "Approval required" : "No approval gate"}</span>
+            {activeTask ? <span>{activeTask.providerId.replace("-", " ")}</span> : null}
           </div>
+        </section>
+      </section>
+
+      <section className="bridge-grid">
+        <section className="panel">
+          <p className="panel-label">HermesBridge Providers</p>
+          <div className="provider-list">
+            {(providerReport?.providers ?? []).map((provider) => (
+              <article className="provider-row" key={provider.id}>
+                <div>
+                  <h3>{provider.label}</h3>
+                  <p>{provider.detail}</p>
+                </div>
+                <span className={`provider-status status-${provider.status}`}>{provider.status}</span>
+              </article>
+            ))}
+            {!providerReport ? <p>Checking Ollama, backup routes, and local candidates...</p> : null}
+          </div>
+        </section>
+
+        <section className="panel">
+          <p className="panel-label">Approval Gate</p>
+          <h2>{activeTask?.approval.status === "required" ? "Review Required" : "Clear For Drafting"}</h2>
+          <ul className="task-list">
+            {(activeTask?.approval.reasons.length ? activeTask.approval.reasons : ["No high-risk action requested."]).map(
+              (reason) => (
+                <li key={reason}>{reason}</li>
+              ),
+            )}
+          </ul>
         </section>
       </section>
 
@@ -88,17 +141,22 @@ export default function App() {
         <section className="panel">
           <p className="panel-label">Task queue</p>
           <ul className="task-list">
-            {openTasks.map((task) => (
-              <li key={task.id}>{task.text}</li>
+            {(activeTask ? tasks : openTasks).map((task) => (
+              <li key={task.id}>
+                {"text" in task ? task.text : `${task.route.agent.name}: ${task.command}`}
+              </li>
             ))}
           </ul>
         </section>
 
         <section className="panel">
-          <p className="panel-label">Shared memory targets</p>
+          <p className="panel-label">Shared memory folders</p>
           <ul className="memory-list">
-            {activeRoute.memoryTargets.map((target) => (
-              <li key={target}>{target}</li>
+            {hermesBridge.memoryFolders.map((folder) => (
+              <li key={folder.id}>
+                <strong>{folder.label}</strong>
+                <span>{folder.path}</span>
+              </li>
             ))}
           </ul>
         </section>

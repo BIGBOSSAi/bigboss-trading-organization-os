@@ -162,6 +162,18 @@ button:disabled {
   opacity: 0.68;
 }
 
+.workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.workflow-actions button {
+  min-height: 38px;
+  font-size: 14px;
+}
+
 .route-meta {
   display: flex;
   flex-wrap: wrap;
@@ -282,6 +294,11 @@ button:disabled {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.task-list strong {
+  color: #f7f4ea;
+  text-transform: capitalize;
+}
+
 .memory-list strong,
 .memory-list span {
   display: block;
@@ -310,7 +327,8 @@ button:disabled {
   }
 
   .topbar,
-  .command-actions {
+  .command-actions,
+  .workflow-actions {
     grid-template-columns: 1fr;
     display: grid;
   }

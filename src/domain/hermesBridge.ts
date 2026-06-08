@@ -33,6 +33,21 @@ export interface ApprovalGate {
   reasons: string[];
 }
 
+export type TaskWorkflowStatus = "drafted" | "needs-approval" | "approved" | "rejected" | "completed";
+export type TaskWorkflowAction = "created" | "approve" | "reject" | "complete" | "blocked";
+
+export interface TaskWorkflowEvent {
+  action: TaskWorkflowAction;
+  status: TaskWorkflowStatus;
+  at: string;
+  note: string;
+}
+
+export interface TaskWorkflow {
+  status: TaskWorkflowStatus;
+  history: TaskWorkflowEvent[];
+}
+
 export interface HermesTaskRecord {
   id: string;
   command: string;
@@ -41,6 +56,7 @@ export interface HermesTaskRecord {
   riskLevel: RiskLevel;
   route: RouteResult;
   approval: ApprovalGate;
+  workflow: TaskWorkflow;
   providerId: ProviderId;
   createdAt: string;
   memoryTargets: string[];
@@ -149,6 +165,7 @@ export function createHermesBridge(options: HermesBridgeOptions = {}) {
     const providerReport = checkedProviders ?? (await checkProviders());
     const approval = buildApprovalGate(route);
     const createdAt = now().toISOString();
+    const workflow = buildInitialWorkflow(approval, createdAt);
 
     return {
       id: `${route.agent.id}-${createdAt}`,
@@ -158,6 +175,7 @@ export function createHermesBridge(options: HermesBridgeOptions = {}) {
       riskLevel: route.riskLevel,
       route,
       approval,
+      workflow,
       providerId: providerReport.primary.id,
       createdAt,
       memoryTargets: route.memoryTargets,
@@ -168,6 +186,73 @@ export function createHermesBridge(options: HermesBridgeOptions = {}) {
     memoryFolders: defaultMemoryFolders,
     checkProviders,
     createTask,
+  };
+}
+
+export function transitionTask(task: HermesTaskRecord, action: Exclude<TaskWorkflowAction, "created" | "blocked">, at = new Date()): HermesTaskRecord {
+  const timestamp = at.toISOString();
+  const currentStatus = task.workflow.status;
+
+  if (action === "approve") {
+    if (currentStatus !== "needs-approval") {
+      return appendWorkflowEvent(task, "blocked", currentStatus, timestamp, "Only tasks waiting for approval can be approved.");
+    }
+
+    return appendWorkflowEvent(task, "approve", "approved", timestamp, "Human approved this task to proceed.");
+  }
+
+  if (action === "reject") {
+    if (currentStatus === "completed") {
+      return appendWorkflowEvent(task, "blocked", currentStatus, timestamp, "Completed tasks cannot be rejected.");
+    }
+
+    return appendWorkflowEvent(task, "reject", "rejected", timestamp, "Human rejected this task.");
+  }
+
+  if (action === "complete") {
+    if (currentStatus === "needs-approval") {
+      return appendWorkflowEvent(task, "blocked", currentStatus, timestamp, "Approval is required before this task can be completed.");
+    }
+
+    if (currentStatus === "rejected") {
+      return appendWorkflowEvent(task, "blocked", currentStatus, timestamp, "Rejected tasks cannot be completed.");
+    }
+
+    return appendWorkflowEvent(task, "complete", "completed", timestamp, "Task marked complete.");
+  }
+
+  return task;
+}
+
+function buildInitialWorkflow(approval: ApprovalGate, createdAt: string): TaskWorkflow {
+  const status: TaskWorkflowStatus = approval.status === "required" ? "needs-approval" : "drafted";
+
+  return {
+    status,
+    history: [
+      {
+        action: "created",
+        status,
+        at: createdAt,
+        note: approval.status === "required" ? "Task created with human approval required." : "Task created and ready for drafting.",
+      },
+    ],
+  };
+}
+
+function appendWorkflowEvent(
+  task: HermesTaskRecord,
+  action: TaskWorkflowAction,
+  status: TaskWorkflowStatus,
+  at: string,
+  note: string,
+): HermesTaskRecord {
+  return {
+    ...task,
+    workflow: {
+      status,
+      history: [...task.workflow.history, { action, status, at, note }],
+    },
   };
 }
 

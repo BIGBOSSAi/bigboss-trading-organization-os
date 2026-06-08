@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { agents, productVault } from "./domain/agents";
-import { createHermesBridge, type HermesTaskRecord, type ProviderStatusReport } from "./domain/hermesBridge";
+import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
 import { routeCommand, type RouteResult } from "./domain/router";
 
@@ -80,6 +80,16 @@ export default function App() {
     }
   }
 
+  function updateActiveTask(action: Exclude<TaskWorkflowAction, "created" | "blocked">) {
+    if (!activeTask) return;
+    const updatedTask = transitionTask(activeTask, action);
+    setTasks((current) => {
+      const nextTasks = current.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+      localBrainStore?.saveTasks(nextTasks);
+      return nextTasks;
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -146,12 +156,30 @@ export default function App() {
         </section>
 
         <section className="panel">
-          <p className="panel-label">Approval Gate</p>
-          <h2>{activeTask?.approval.status === "required" ? "Review Required" : "Clear For Drafting"}</h2>
+          <p className="panel-label">Task Detail</p>
+          <h2>{activeTask ? activeTask.workflow.status.replace("-", " ") : "Clear For Drafting"}</h2>
+          <p>{activeTask ? activeTask.command : "No active task yet."}</p>
+          <div className="workflow-actions">
+            <button type="button" onClick={() => updateActiveTask("approve")} disabled={!activeTask || activeTask.workflow.status !== "needs-approval"}>
+              Approve
+            </button>
+            <button type="button" onClick={() => updateActiveTask("reject")} disabled={!activeTask || activeTask.workflow.status === "completed"}>
+              Reject
+            </button>
+            <button
+              type="button"
+              onClick={() => updateActiveTask("complete")}
+              disabled={!activeTask || activeTask.workflow.status === "needs-approval" || activeTask.workflow.status === "rejected" || activeTask.workflow.status === "completed"}
+            >
+              Complete
+            </button>
+          </div>
           <ul className="task-list">
-            {(activeTask?.approval.reasons.length ? activeTask.approval.reasons : ["No high-risk action requested."]).map(
-              (reason) => (
-                <li key={reason}>{reason}</li>
+            {(activeTask?.workflow.history ?? [{ action: "created", note: "No high-risk action requested.", at: "", status: "drafted" }]).slice(-3).map(
+              (event) => (
+                <li key={`${event.action}-${event.at}`}>
+                  <strong>{event.action}</strong> {event.note}
+                </li>
               ),
             )}
           </ul>
@@ -182,7 +210,7 @@ export default function App() {
           <ul className="task-list">
             {(activeTask ? tasks : openTasks).map((task) => (
               <li key={task.id}>
-                {"text" in task ? task.text : `${task.route.agent.name}: ${task.command}`}
+                {"text" in task ? task.text : `${task.route.agent.name}: ${task.command} (${task.workflow.status})`}
               </li>
             ))}
           </ul>

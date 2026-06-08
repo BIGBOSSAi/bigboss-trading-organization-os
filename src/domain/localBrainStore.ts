@@ -1,5 +1,5 @@
 import type { AgentId } from "./agents";
-import type { HermesTaskRecord, MemoryFolder } from "./hermesBridge";
+import type { HermesTaskRecord, MemoryFolder, TaskWorkflow } from "./hermesBridge";
 
 const taskStorageKey = "bigboss.hermes.tasks.v1";
 const memoryStorageKey = "bigboss.hermes.memory.v1";
@@ -22,7 +22,7 @@ export interface LocalBrainSnapshot {
 
 export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setItem">) {
   function loadTasks(): HermesTaskRecord[] {
-    return readArray<HermesTaskRecord>(storage, taskStorageKey);
+    return readArray<Partial<HermesTaskRecord>>(storage, taskStorageKey).map(normalizeTask);
   }
 
   function saveTasks(tasks: HermesTaskRecord[]): void {
@@ -86,4 +86,25 @@ function chooseMemoryFolder(task: HermesTaskRecord): MemoryFolderId {
   }
 
   return "tasks";
+}
+
+function normalizeTask(task: Partial<HermesTaskRecord>): HermesTaskRecord {
+  const createdAt = task.createdAt ?? new Date(0).toISOString();
+  const approvalRequired = task.approval?.status === "required";
+  const workflow: TaskWorkflow = task.workflow ?? {
+    status: approvalRequired ? "needs-approval" : "drafted",
+    history: [
+      {
+        action: "created",
+        status: approvalRequired ? "needs-approval" : "drafted",
+        at: createdAt,
+        note: approvalRequired ? "Migrated task with human approval required." : "Migrated task ready for drafting.",
+      },
+    ],
+  };
+
+  return {
+    ...(task as HermesTaskRecord),
+    workflow,
+  };
 }

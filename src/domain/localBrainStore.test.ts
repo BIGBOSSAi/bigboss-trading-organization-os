@@ -65,4 +65,18 @@ describe("createLocalBrainStore", () => {
     expect(store.loadTasks()).toEqual([]);
     expect(store.loadMemoryEntries()).toEqual([]);
   });
+
+  it("migrates saved task records that do not have workflow state yet", async () => {
+    const storage = new MemoryStorage();
+    const bridge = createHermesBridge({ now: () => new Date("2026-06-08T20:32:00.000Z") });
+    const task = await bridge.createTask("Backtest this MT5 bot and tell me if it is live ready");
+    const legacyTask = { ...task, workflow: undefined };
+    storage.setItem("bigboss.hermes.tasks.v1", JSON.stringify([legacyTask]));
+    const store = createLocalBrainStore(storage);
+
+    const [loadedTask] = store.loadTasks();
+
+    expect(loadedTask.workflow.status).toBe("needs-approval");
+    expect(loadedTask.workflow.history[0]?.action).toBe("created");
+  });
 });

@@ -31,6 +31,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Local deterministic Brain Router for V1
 - HermesBridge V1 domain layer with mock, Ollama local, FCC backup, and MiMo candidate provider statuses
 - Browser-local task and memory persistence; no API keys, live trading, or external publishing integrations yet
+- Approval workflow states: `drafted`, `needs-approval`, `approved`, `rejected`, and `completed`
 
 ## Known Commands
 

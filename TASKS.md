@@ -25,10 +25,11 @@
 - [x] Connect a local model runtime health check.
 - [x] Stabilize command routing clicks with provider timeout and visible loading state.
 - [x] Persist HermesBridge task records and memory entries to browser storage.
+- [x] Add approval workflow state and task detail controls.
 
 ## Next
 
 - [ ] Add durable shared memory storage.
 - [ ] Add richer agent output templates.
-- [ ] Add approval workflow state.
-- [ ] Add task detail view with approve, reject, and complete states.
+- [ ] Add output workspace for agent-generated drafts.
+- [ ] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.

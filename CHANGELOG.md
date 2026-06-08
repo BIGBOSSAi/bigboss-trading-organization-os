@@ -19,3 +19,4 @@
 - Added a local-first Hermes and MiMo installation strategy for running the AI brain from the desktop before any paid hosting.
 - Added HermesBridge V1 with provider health checks, local memory folder manifest, approval-gated task records, and cockpit provider status UI.
 - Stabilized command routing so offline or stuck model providers time out quickly, failed probes fall back to the mock provider, and the route button shows a loading state instead of feeling unresponsive.
+- Added browser-local persistence for HermesBridge task records and memory entries so the cockpit can remember recent routed work after refresh.

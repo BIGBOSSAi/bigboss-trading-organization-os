@@ -17,6 +17,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `docs/superpowers/specs/2026-06-08-bigboss-trading-organization-os-design.md`: approved design spec.
 - `docs/research/hermes-desktop-os1-integration.md`: Hermes OS1 integration research.
 - `docs/research/local-hermes-mimo-installation.md`: local-first Hermes and MiMo installation strategy.
+- `src/domain/localBrainStore.ts`: browser-local task and memory persistence for HermesBridge V1.
 - `outputs/`: user-facing deliverables.
 - `work/`: drafts, scratch files, and intermediate work.
 - `.superpowers/brainstorm/`: local brainstorming companion artifacts.
@@ -29,7 +30,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Vitest
 - Local deterministic Brain Router for V1
 - HermesBridge V1 domain layer with mock, Ollama local, FCC backup, and MiMo candidate provider statuses
-- Local browser state only; no API keys, live trading, or external publishing integrations yet
+- Browser-local task and memory persistence; no API keys, live trading, or external publishing integrations yet
 
 ## Known Commands
 

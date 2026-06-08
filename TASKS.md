@@ -24,10 +24,11 @@
 - [x] Build HermesBridge V1 backend integration.
 - [x] Connect a local model runtime health check.
 - [x] Stabilize command routing clicks with provider timeout and visible loading state.
+- [x] Persist HermesBridge task records and memory entries to browser storage.
 
 ## Next
 
-- [ ] Persist HermesBridge task records to disk or browser storage.
 - [ ] Add durable shared memory storage.
 - [ ] Add richer agent output templates.
 - [ ] Add approval workflow state.
+- [ ] Add task detail view with approve, reject, and complete states.

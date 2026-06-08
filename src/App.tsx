@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, type HermesTaskRecord, type ProviderStatusReport } from "./domain/hermesBridge";
+import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
 import { routeCommand, type RouteResult } from "./domain/router";
 
 const starterCommands = [
@@ -10,11 +11,15 @@ const starterCommands = [
 ];
 
 const hermesBridge = createHermesBridge();
+const localBrainStore = typeof window !== "undefined" ? createLocalBrainStore(window.localStorage) : null;
 
 export default function App() {
   const [command, setCommand] = useState(starterCommands[0]);
   const [routes, setRoutes] = useState<RouteResult[]>([]);
-  const [tasks, setTasks] = useState<HermesTaskRecord[]>([]);
+  const [tasks, setTasks] = useState<HermesTaskRecord[]>(() => localBrainStore?.loadSnapshot().tasks ?? []);
+  const [memoryEntries, setMemoryEntries] = useState<LocalMemoryEntry[]>(
+    () => localBrainStore?.loadSnapshot().memoryEntries ?? [],
+  );
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
 
@@ -49,13 +54,26 @@ export default function App() {
     try {
       const checkedProviders = await hermesBridge.checkProviders();
       const task = await hermesBridge.createTask(trimmed, checkedProviders);
+      const memoryEntry = localBrainStore?.createMemoryEntryFromTask(task);
       setProviderReport(checkedProviders);
       setTasks((current) => {
         if (current[0]?.command === task.command && current[0]?.agentId === task.agentId) {
           return current;
         }
-        return [task, ...current].slice(0, 6);
+        const nextTasks = [task, ...current].slice(0, 12);
+        localBrainStore?.saveTasks(nextTasks);
+        return nextTasks;
       });
+      if (memoryEntry) {
+        setMemoryEntries((current) => {
+          if (current.some((entry) => entry.id === memoryEntry.id)) {
+            return current;
+          }
+          const nextEntries = [memoryEntry, ...current].slice(0, 24);
+          localBrainStore?.saveMemoryEntries(nextEntries);
+          return nextEntries;
+        });
+      }
       setRoutes((current) => [task.route, ...current].slice(0, 6));
     } finally {
       setIsRouting(false);
@@ -138,6 +156,12 @@ export default function App() {
             )}
           </ul>
         </section>
+
+        <section className="panel">
+          <p className="panel-label">Local Memory</p>
+          <h2>{memoryEntries.length} Saved</h2>
+          <p>Task records and memory entries are stored in this browser only.</p>
+        </section>
       </section>
 
       <section className="dashboard-grid">
@@ -167,12 +191,18 @@ export default function App() {
         <section className="panel">
           <p className="panel-label">Shared memory folders</p>
           <ul className="memory-list">
-            {hermesBridge.memoryFolders.map((folder) => (
+            {memoryEntries.slice(0, 5).map((entry) => (
+              <li key={entry.id}>
+                <strong>{entry.folderId}</strong>
+                <span>{entry.summary}</span>
+              </li>
+            ))}
+            {memoryEntries.length === 0 ? hermesBridge.memoryFolders.map((folder) => (
               <li key={folder.id}>
                 <strong>{folder.label}</strong>
                 <span>{folder.path}</span>
               </li>
-            ))}
+            )) : null}
           </ul>
         </section>
 

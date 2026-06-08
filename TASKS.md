@@ -14,9 +14,13 @@
 - [x] Pushed initial design foundation to GitHub.
 - [x] Review the written design spec.
 - [x] Create implementation plan.
+- [x] Choose stack for V1 web app.
+- [x] Scaffold project structure.
+- [x] Build first working operator cockpit screen.
 
 ## Next
 
-- [ ] Choose stack for V1 web app.
-- [ ] Scaffold project structure.
-- [ ] Build first working operator cockpit screen.
+- [ ] Merge `codex/operator-cockpit-v1` back into `main`.
+- [ ] Add durable shared memory storage.
+- [ ] Add richer agent output templates.
+- [ ] Add approval workflow state.

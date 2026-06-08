@@ -21,13 +21,18 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 
 ## Detected Stack And Tooling
 
-No app stack has been selected yet. The design phase points toward a web application with a chat-first operator cockpit, shared memory, task queue, and specialist agent routing.
+- Vite
+- React
+- TypeScript
+- Vitest
+- Local deterministic Brain Router for V1
+- Local browser state only; no API keys, live trading, or external publishing integrations yet
 
 ## Known Commands
 
-- Run: unknown.
-- Test: unknown.
-- Build: unknown.
+- Run: `npm run dev`
+- Test: `npm test`
+- Build: `npm run build`
 - Deploy: unknown.
 
 ## Assumptions

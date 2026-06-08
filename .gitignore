@@ -1,5 +1,7 @@
 .superpowers/
 .worktrees/
+node_modules/
+dist/
 
 # Local scratch areas
 work/*

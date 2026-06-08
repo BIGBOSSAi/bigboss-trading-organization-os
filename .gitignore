@@ -1,0 +1,11 @@
+.superpowers/
+
+# Local scratch areas
+work/*
+!work/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

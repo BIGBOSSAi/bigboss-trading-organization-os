@@ -306,6 +306,13 @@ button:disabled {
   gap: 8px;
 }
 
+.command-snippet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .command-snippets code {
   display: block;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -314,6 +321,11 @@ button:disabled {
   color: #f7f4ea;
   background: #0d0d0d;
   overflow-wrap: anywhere;
+}
+
+.command-snippet-row button {
+  min-height: 38px;
+  padding: 0 14px;
 }
 
 .output-sections {
@@ -503,6 +515,7 @@ button:disabled {
 
   .topbar,
   .workspace-heading,
+  .command-snippet-row,
   .command-actions,
   .workflow-actions {
     grid-template-columns: 1fr;

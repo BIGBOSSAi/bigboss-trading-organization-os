@@ -41,6 +41,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Task queue rows can be selected to inspect the matching workflow state and generated output.
 - Local Brain Test panel can discover Ollama models and send non-streaming test prompts when Ollama is running.
 - Local Brain Test panel shows start/repair guidance when Ollama is offline or has no models.
+- Ollama repair commands can be copied from the dashboard.
 
 ## Known Commands
 

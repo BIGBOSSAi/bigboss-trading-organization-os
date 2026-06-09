@@ -28,3 +28,4 @@
 - Added editable Markdown mode for agent output drafts, with local save support and copy/download using the edited version.
 - Added a Local Brain Test panel with Ollama model discovery, safe prompt testing, and offline fallback messaging.
 - Added Ollama start/repair guidance with Windows commands and next actions inside the Local Brain Test panel.
+- Added one-click copy buttons for Ollama repair commands in the Local Brain Test panel.

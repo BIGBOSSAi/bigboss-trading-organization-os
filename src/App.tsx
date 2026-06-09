@@ -43,6 +43,7 @@ export default function App() {
   const [brainPrompt, setBrainPrompt] = useState("Explain liquidity in one sentence for a beginner trader.");
   const [brainResponse, setBrainResponse] = useState("");
   const [isTestingBrain, setIsTestingBrain] = useState(false);
+  const [commandCopyStatus, setCommandCopyStatus] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -191,6 +192,15 @@ export default function App() {
       setBrainResponse(result.response);
     } finally {
       setIsTestingBrain(false);
+    }
+  }
+
+  async function copyRepairCommand(commandText: string) {
+    try {
+      await navigator.clipboard.writeText(commandText);
+      setCommandCopyStatus(`Copied: ${commandText}`);
+    } catch {
+      setCommandCopyStatus("Clipboard was blocked by the browser. Select and copy the command manually.");
     }
   }
 
@@ -411,7 +421,12 @@ export default function App() {
             {ollamaGuidance.commands.length ? (
               <div className="command-snippets">
                 {ollamaGuidance.commands.map((commandText) => (
-                  <code key={commandText}>{commandText}</code>
+                  <div className="command-snippet-row" key={commandText}>
+                    <code>{commandText}</code>
+                    <button type="button" onClick={() => copyRepairCommand(commandText)}>
+                      Copy
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : null}
@@ -420,6 +435,7 @@ export default function App() {
                 <li key={action}>{action}</li>
               ))}
             </ul>
+            {commandCopyStatus ? <p className="export-status">{commandCopyStatus}</p> : null}
           </div>
         </section>
       </section>

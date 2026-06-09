@@ -25,3 +25,4 @@
 - Fixed router keyword matching so words containing `ea` no longer get misrouted as Expert Advisor bot work.
 - Added Markdown copy and `.md` download actions for generated agent drafts.
 - Added clickable task selection so the task detail panel and output workspace can inspect older routed work.
+- Added editable Markdown mode for agent output drafts, with local save support and copy/download using the edited version.

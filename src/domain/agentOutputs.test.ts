@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAgentOutputAsMarkdown, generateAgentOutput, getAgentOutputFilename } from "./agentOutputs";
+import { formatAgentOutputAsMarkdown, generateAgentOutput, getAgentOutputFilename, updateAgentOutputMarkdown } from "./agentOutputs";
 import { createHermesBridge } from "./hermesBridge";
 
 describe("generateAgentOutput", () => {
@@ -61,5 +61,15 @@ describe("generateAgentOutput", () => {
     const output = generateAgentOutput(await bridge.createTask("Write a LinkedIn post about central banks"));
 
     expect(getAgentOutputFilename(output)).toBe("voice-brand-content-draft.md");
+  });
+
+  it("prefers saved edited Markdown when formatting output", async () => {
+    const bridge = createHermesBridge({ now: () => new Date("2026-06-09T13:00:00.000Z") });
+    const output = generateAgentOutput(await bridge.createTask("Build a liquidity lesson for AI Trading College"));
+
+    const edited = updateAgentOutputMarkdown(output, "# Custom Lesson\n\nMy edited draft.");
+
+    expect(formatAgentOutputAsMarkdown(edited)).toBe("# Custom Lesson\n\nMy edited draft.");
+    expect(edited.updatedAt).toBeTruthy();
   });
 });

@@ -236,6 +236,22 @@ button:disabled {
   font-size: 13px;
 }
 
+.editor-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.editor-panel textarea {
+  min-height: 360px;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  line-height: 1.5;
+}
+
+.editor-panel button {
+  justify-self: start;
+  min-width: 150px;
+}
+
 .output-sections {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

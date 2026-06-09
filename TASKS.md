@@ -30,10 +30,11 @@
 - [x] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.
 - [x] Add export/copy actions for generated drafts.
 - [x] Add task selection so task detail and output workspace follow clicked task rows.
+- [x] Add editable output workspace with local Markdown saves.
 
 ## Next
 
 - [ ] Add durable shared memory storage.
-- [ ] Add richer editable agent output templates.
+- [ ] Add richer agent output sections and version history.
 - [ ] Add provider-backed generation when a local model is healthy.
 - [ ] Add GitHub-backed export path after local file export is proven.

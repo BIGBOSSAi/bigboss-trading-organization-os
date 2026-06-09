@@ -15,6 +15,8 @@ export interface AgentOutputDraft {
   sections: AgentOutputSection[];
   guardrails: string[];
   createdAt: string;
+  editedMarkdown?: string;
+  updatedAt?: string;
 }
 
 type OutputTemplate = Omit<AgentOutputDraft, "id" | "taskId" | "agentId" | "createdAt">;
@@ -32,6 +34,10 @@ export function generateAgentOutput(task: HermesTaskRecord): AgentOutputDraft {
 }
 
 export function formatAgentOutputAsMarkdown(output: AgentOutputDraft): string {
+  if (output.editedMarkdown?.trim()) {
+    return output.editedMarkdown;
+  }
+
   const sectionMarkdown = output.sections
     .map((section) => {
       const bullets = section.bullets.map((bullet) => `- ${bullet}`).join("\n");
@@ -54,6 +60,14 @@ export function formatAgentOutputAsMarkdown(output: AgentOutputDraft): string {
     "",
     guardrails,
   ].join("\n");
+}
+
+export function updateAgentOutputMarkdown(output: AgentOutputDraft, editedMarkdown: string, updatedAt = new Date()): AgentOutputDraft {
+  return {
+    ...output,
+    editedMarkdown,
+    updatedAt: updatedAt.toISOString(),
+  };
 }
 
 export function getAgentOutputFilename(output: AgentOutputDraft): string {

@@ -3,6 +3,7 @@ import {
   formatAgentOutputAsMarkdown,
   generateAgentOutput,
   getAgentOutputFilename,
+  updateAgentOutputMarkdown,
   type AgentOutputDraft,
 } from "./domain/agentOutputs";
 import { agents, productVault } from "./domain/agents";
@@ -32,6 +33,8 @@ export default function App() {
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(() => localBrainStore?.loadSnapshot().tasks[0]?.id);
+  const [isEditingOutput, setIsEditingOutput] = useState(false);
+  const [draftMarkdown, setDraftMarkdown] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -96,6 +99,7 @@ export default function App() {
       });
       setRoutes((current) => [task.route, ...current].slice(0, 6));
       setExportStatus("");
+      setIsEditingOutput(false);
     } finally {
       setIsRouting(false);
     }
@@ -109,6 +113,25 @@ export default function App() {
       localBrainStore?.saveTasks(nextTasks);
       return nextTasks;
     });
+  }
+
+  function startEditingOutput() {
+    if (!activeOutput) return;
+    setDraftMarkdown(formatAgentOutputAsMarkdown(activeOutput));
+    setIsEditingOutput(true);
+    setExportStatus("");
+  }
+
+  function saveOutputEdits() {
+    if (!activeOutput) return;
+    const editedOutput = updateAgentOutputMarkdown(activeOutput, draftMarkdown);
+    setOutputs((current) => {
+      const nextOutputs = current.map((output) => (output.id === editedOutput.id ? editedOutput : output));
+      localBrainStore?.saveOutputs(nextOutputs);
+      return nextOutputs;
+    });
+    setIsEditingOutput(false);
+    setExportStatus("Saved edited Markdown locally.");
   }
 
   async function copyActiveOutput() {
@@ -256,25 +279,51 @@ export default function App() {
                   <button type="button" onClick={downloadActiveOutput}>
                     Download .md
                   </button>
+                  {isEditingOutput ? (
+                    <button type="button" onClick={() => setIsEditingOutput(false)}>
+                      Preview
+                    </button>
+                  ) : (
+                    <button type="button" onClick={startEditingOutput}>
+                      Edit Draft
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="output-sections">
-                {activeOutput.sections.map((section) => (
-                  <article className="output-section" key={section.heading}>
-                    <h3>{section.heading}</h3>
-                    <ul>
-                      {section.bullets.map((bullet) => (
-                        <li key={bullet}>{bullet}</li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-              <div className="guardrail-strip">
-                {activeOutput.guardrails.map((guardrail) => (
-                  <span key={guardrail}>{guardrail}</span>
-                ))}
-              </div>
+              {isEditingOutput ? (
+                <div className="editor-panel">
+                  <textarea
+                    aria-label="Edit output Markdown"
+                    value={draftMarkdown}
+                    onChange={(event) => setDraftMarkdown(event.target.value)}
+                    rows={14}
+                  />
+                  <button type="button" onClick={saveOutputEdits}>
+                    Save Edits
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="output-sections">
+                    {activeOutput.sections.map((section) => (
+                      <article className="output-section" key={section.heading}>
+                        <h3>{section.heading}</h3>
+                        <ul>
+                          {section.bullets.map((bullet) => (
+                            <li key={bullet}>{bullet}</li>
+                          ))}
+                        </ul>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="guardrail-strip">
+                    {activeOutput.guardrails.map((guardrail) => (
+                      <span key={guardrail}>{guardrail}</span>
+                    ))}
+                    {activeOutput.editedMarkdown ? <span>Edited version saved locally.</span> : null}
+                  </div>
+                </>
+              )}
               {exportStatus ? <p className="export-status">{exportStatus}</p> : null}
             </>
           ) : (

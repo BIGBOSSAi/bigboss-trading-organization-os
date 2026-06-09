@@ -11,6 +11,7 @@ import { createHermesBridge, transitionTask, type HermesTaskRecord, type Provide
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
 import { createLocalModelClient, type ModelDiscoveryResult } from "./domain/localModelClient";
 import { getOllamaGuidance } from "./domain/ollamaGuidance";
+import { enhanceOutputWithProvider } from "./domain/providerGeneration";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -44,6 +45,7 @@ export default function App() {
   const [brainResponse, setBrainResponse] = useState("");
   const [isTestingBrain, setIsTestingBrain] = useState(false);
   const [commandCopyStatus, setCommandCopyStatus] = useState("");
+  const [isEnhancingOutput, setIsEnhancingOutput] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -204,6 +206,31 @@ export default function App() {
     }
   }
 
+  async function enhanceActiveOutput() {
+    if (!activeTask || !activeOutput || !selectedModel || isEnhancingOutput) return;
+    setIsEnhancingOutput(true);
+    setExportStatus("Asking local brain to enhance this draft...");
+
+    try {
+      const result = await enhanceOutputWithProvider({
+        task: activeTask,
+        output: activeOutput,
+        model: selectedModel,
+        generate: localModelClient.generate,
+      });
+      if (result.status === "complete") {
+        setOutputs((current) => {
+          const nextOutputs = current.map((output) => (output.id === result.output.id ? result.output : output));
+          localBrainStore?.saveOutputs(nextOutputs);
+          return nextOutputs;
+        });
+      }
+      setExportStatus(result.message);
+    } finally {
+      setIsEnhancingOutput(false);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -333,6 +360,9 @@ export default function App() {
                       Edit Draft
                     </button>
                   )}
+                  <button type="button" onClick={enhanceActiveOutput} disabled={!selectedModel || isEnhancingOutput}>
+                    {isEnhancingOutput ? "Enhancing..." : "Enhance With Local Brain"}
+                  </button>
                 </div>
               </div>
               {isEditingOutput ? (

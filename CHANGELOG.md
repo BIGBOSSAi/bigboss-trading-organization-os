@@ -29,3 +29,4 @@
 - Added a Local Brain Test panel with Ollama model discovery, safe prompt testing, and offline fallback messaging.
 - Added Ollama start/repair guidance with Windows commands and next actions inside the Local Brain Test panel.
 - Added one-click copy buttons for Ollama repair commands in the Local Brain Test panel.
+- Added provider-backed draft enhancement so a healthy local Ollama model can improve the active agent output while preserving deterministic fallback behavior.

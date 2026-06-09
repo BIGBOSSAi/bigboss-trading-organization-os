@@ -9,6 +9,7 @@ import {
 import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
+import { createLocalModelClient, type ModelDiscoveryResult } from "./domain/localModelClient";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -19,6 +20,7 @@ const starterCommands = [
 ];
 
 const hermesBridge = createHermesBridge();
+const localModelClient = createLocalModelClient();
 const localBrainStore = typeof window !== "undefined" ? createLocalBrainStore(window.localStorage) : null;
 
 export default function App() {
@@ -35,11 +37,21 @@ export default function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(() => localBrainStore?.loadSnapshot().tasks[0]?.id);
   const [isEditingOutput, setIsEditingOutput] = useState(false);
   const [draftMarkdown, setDraftMarkdown] = useState("");
+  const [modelDiscovery, setModelDiscovery] = useState<ModelDiscoveryResult | null>(null);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [brainPrompt, setBrainPrompt] = useState("Explain liquidity in one sentence for a beginner trader.");
+  const [brainResponse, setBrainResponse] = useState("");
+  const [isTestingBrain, setIsTestingBrain] = useState(false);
 
   useEffect(() => {
     let active = true;
     hermesBridge.checkProviders().then((report) => {
       if (active) setProviderReport(report);
+    });
+    localModelClient.listModels().then((result) => {
+      if (!active) return;
+      setModelDiscovery(result);
+      setSelectedModel(result.models[0] ?? "");
     });
 
     return () => {
@@ -157,6 +169,27 @@ export default function App() {
     link.click();
     URL.revokeObjectURL(url);
     setExportStatus(`Downloaded ${link.download}.`);
+  }
+
+  async function refreshLocalModels() {
+    const result = await localModelClient.listModels();
+    setModelDiscovery(result);
+    setSelectedModel((current) => current || result.models[0] || "");
+    setBrainResponse(result.detail);
+  }
+
+  async function testLocalBrain() {
+    const prompt = brainPrompt.trim();
+    if (!selectedModel || !prompt || isTestingBrain) return;
+    setIsTestingBrain(true);
+    setBrainResponse("Thinking locally...");
+
+    try {
+      const result = await localModelClient.generate({ model: selectedModel, prompt });
+      setBrainResponse(result.response);
+    } finally {
+      setIsTestingBrain(false);
+    }
   }
 
   return (
@@ -329,6 +362,45 @@ export default function App() {
           ) : (
             <p>Route a command to generate the first structured agent draft.</p>
           )}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel local-brain-panel">
+          <p className="panel-label">Local Brain Test</p>
+          <div className="workspace-heading">
+            <div>
+              <h2>{modelDiscovery?.status === "healthy" ? "Ollama Ready" : "Ollama Offline"}</h2>
+              <p>{modelDiscovery?.detail ?? "Checking local model runtime..."}</p>
+            </div>
+            <button type="button" onClick={refreshLocalModels}>
+              Refresh Models
+            </button>
+          </div>
+          <div className="brain-test-grid">
+            <label>
+              Model
+              <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+                {modelDiscovery?.models.length ? (
+                  modelDiscovery.models.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No local model found</option>
+                )}
+              </select>
+            </label>
+            <label>
+              Test prompt
+              <textarea value={brainPrompt} onChange={(event) => setBrainPrompt(event.target.value)} rows={4} />
+            </label>
+            <button type="button" onClick={testLocalBrain} disabled={!selectedModel || !brainPrompt.trim() || isTestingBrain}>
+              {isTestingBrain ? "Thinking..." : "Ask Local Brain"}
+            </button>
+          </div>
+          {brainResponse ? <pre className="brain-response">{brainResponse}</pre> : null}
         </section>
       </section>
 

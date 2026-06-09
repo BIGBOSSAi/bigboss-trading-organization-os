@@ -18,6 +18,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `docs/research/hermes-desktop-os1-integration.md`: Hermes OS1 integration research.
 - `docs/research/local-hermes-mimo-installation.md`: local-first Hermes and MiMo installation strategy.
 - `src/domain/agentOutputs.ts`: deterministic per-agent structured output drafts for the V1 workforce.
+- `src/domain/localModelClient.ts`: Ollama-compatible local model discovery and prompt test client.
 - `src/domain/localBrainStore.ts`: browser-local task and memory persistence for HermesBridge V1.
 - `outputs/`: user-facing deliverables.
 - `work/`: drafts, scratch files, and intermediate work.
@@ -37,6 +38,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Generated drafts can be copied as Markdown or downloaded as `.md` files from the browser.
 - Generated drafts can be edited as Markdown and saved locally in browser storage.
 - Task queue rows can be selected to inspect the matching workflow state and generated output.
+- Local Brain Test panel can discover Ollama models and send non-streaming test prompts when Ollama is running.
 
 ## Known Commands
 

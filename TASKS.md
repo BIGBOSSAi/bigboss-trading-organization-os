@@ -31,6 +31,7 @@
 - [x] Add export/copy actions for generated drafts.
 - [x] Add task selection so task detail and output workspace follow clicked task rows.
 - [x] Add editable output workspace with local Markdown saves.
+- [x] Add Local Brain Test panel for Ollama model discovery and safe prompt testing.
 
 ## Next
 
@@ -38,3 +39,4 @@
 - [ ] Add richer agent output sections and version history.
 - [ ] Add provider-backed generation when a local model is healthy.
 - [ ] Add GitHub-backed export path after local file export is proven.
+- [ ] Add Ollama start/repair guidance when local brain is offline.

@@ -252,6 +252,34 @@ button:disabled {
   min-width: 150px;
 }
 
+.brain-test-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.4fr) minmax(0, 1fr) minmax(160px, 0.25fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.brain-test-grid label {
+  display: grid;
+  gap: 8px;
+  color: #f7f4ea;
+  font-weight: 800;
+}
+
+.brain-test-grid textarea {
+  min-height: 92px;
+}
+
+.brain-response {
+  margin: 14px 0 0;
+  border: 1px solid rgba(158, 230, 175, 0.22);
+  border-radius: 8px;
+  padding: 14px;
+  color: #dff7e4;
+  background: rgba(158, 230, 175, 0.08);
+  white-space: pre-wrap;
+}
+
 .output-sections {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -425,6 +453,7 @@ button:disabled {
 @media (max-width: 1100px) {
   .command-grid,
   .bridge-grid,
+  .brain-test-grid,
   .output-sections,
   .dashboard-grid {
     grid-template-columns: 1fr;

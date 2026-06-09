@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateAgentOutput } from "./agentOutputs";
+import { formatAgentOutputAsMarkdown, generateAgentOutput, getAgentOutputFilename } from "./agentOutputs";
 import { createHermesBridge } from "./hermesBridge";
 
 describe("generateAgentOutput", () => {
@@ -42,5 +42,24 @@ describe("generateAgentOutput", () => {
 
     expect(outputs.map((output) => output.agentId)).toEqual(["dean", "ledger", "forge", "voice", "scout", "launch"]);
     expect(new Set(outputs.map((output) => output.title)).size).toBe(6);
+  });
+
+  it("formats an output draft as portable Markdown", async () => {
+    const bridge = createHermesBridge({ now: () => new Date("2026-06-08T22:03:00.000Z") });
+    const output = generateAgentOutput(await bridge.createTask("Create an offer for BIGBoss Trader OS"));
+
+    const markdown = formatAgentOutputAsMarkdown(output);
+
+    expect(markdown).toContain("# Product Offer Plan");
+    expect(markdown).toContain("## Offer Promise");
+    expect(markdown).toContain("## Guardrails");
+    expect(markdown).toContain("- No guaranteed income or performance promises.");
+  });
+
+  it("creates a safe markdown filename for export", async () => {
+    const bridge = createHermesBridge({ now: () => new Date("2026-06-08T22:04:00.000Z") });
+    const output = generateAgentOutput(await bridge.createTask("Write a LinkedIn post about central banks"));
+
+    expect(getAgentOutputFilename(output)).toBe("voice-brand-content-draft.md");
   });
 });

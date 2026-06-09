@@ -28,10 +28,11 @@
 - [x] Add approval workflow state and task detail controls.
 - [x] Add output workspace for agent-generated drafts.
 - [x] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.
+- [x] Add export/copy actions for generated drafts.
 
 ## Next
 
 - [ ] Add durable shared memory storage.
 - [ ] Add richer editable agent output templates.
-- [ ] Add export/copy actions for generated drafts.
 - [ ] Add provider-backed generation when a local model is healthy.
+- [ ] Add GitHub-backed export path after local file export is proven.

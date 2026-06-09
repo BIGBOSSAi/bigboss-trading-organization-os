@@ -23,3 +23,4 @@
 - Added task workflow states, approval/rejection/completion transitions, task detail controls, and migration for older saved task records.
 - Added deterministic per-agent output drafts and an Agent Output Workspace for Dean, Ledger, Forge, Voice, Scout, and Launch.
 - Fixed router keyword matching so words containing `ea` no longer get misrouted as Expert Advisor bot work.
+- Added Markdown copy and `.md` download actions for generated agent drafts.

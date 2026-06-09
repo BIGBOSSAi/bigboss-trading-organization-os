@@ -31,6 +31,40 @@ export function generateAgentOutput(task: HermesTaskRecord): AgentOutputDraft {
   };
 }
 
+export function formatAgentOutputAsMarkdown(output: AgentOutputDraft): string {
+  const sectionMarkdown = output.sections
+    .map((section) => {
+      const bullets = section.bullets.map((bullet) => `- ${bullet}`).join("\n");
+      return `## ${section.heading}\n\n${bullets}`;
+    })
+    .join("\n\n");
+  const guardrails = output.guardrails.map((guardrail) => `- ${guardrail}`).join("\n");
+
+  return [
+    `# ${output.title}`,
+    "",
+    `Agent: ${output.agentId}`,
+    `Created: ${output.createdAt}`,
+    "",
+    output.summary,
+    "",
+    sectionMarkdown,
+    "",
+    "## Guardrails",
+    "",
+    guardrails,
+  ].join("\n");
+}
+
+export function getAgentOutputFilename(output: AgentOutputDraft): string {
+  const safeTitle = output.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${output.agentId}-${safeTitle}.md`;
+}
+
 const templates: Record<AgentId, (task: HermesTaskRecord) => OutputTemplate> = {
   dean: (task) => ({
     title: "AI Trading College Lesson Draft",

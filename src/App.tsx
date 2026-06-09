@@ -1,5 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { generateAgentOutput, type AgentOutputDraft } from "./domain/agentOutputs";
+import {
+  formatAgentOutputAsMarkdown,
+  generateAgentOutput,
+  getAgentOutputFilename,
+  type AgentOutputDraft,
+} from "./domain/agentOutputs";
 import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
@@ -24,6 +29,7 @@ export default function App() {
   const [outputs, setOutputs] = useState<AgentOutputDraft[]>(() => localBrainStore?.loadSnapshot().outputs ?? []);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
+  const [exportStatus, setExportStatus] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -100,6 +106,31 @@ export default function App() {
       localBrainStore?.saveTasks(nextTasks);
       return nextTasks;
     });
+  }
+
+  async function copyActiveOutput() {
+    if (!activeOutput) return;
+    const markdown = formatAgentOutputAsMarkdown(activeOutput);
+
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setExportStatus("Copied Markdown to clipboard.");
+    } catch {
+      setExportStatus("Clipboard was blocked by the browser. Use Download instead.");
+    }
+  }
+
+  function downloadActiveOutput() {
+    if (!activeOutput) return;
+    const markdown = formatAgentOutputAsMarkdown(activeOutput);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getAgentOutputFilename(activeOutput);
+    link.click();
+    URL.revokeObjectURL(url);
+    setExportStatus(`Downloaded ${link.download}.`);
   }
 
   return (
@@ -214,7 +245,15 @@ export default function App() {
                   <h2>{activeOutput.title}</h2>
                   <p>{activeOutput.summary}</p>
                 </div>
-                <span className="status-pill">{activeOutput.agentId}</span>
+                <div className="workspace-actions">
+                  <span className="status-pill">{activeOutput.agentId}</span>
+                  <button type="button" onClick={copyActiveOutput}>
+                    Copy Markdown
+                  </button>
+                  <button type="button" onClick={downloadActiveOutput}>
+                    Download .md
+                  </button>
+                </div>
               </div>
               <div className="output-sections">
                 {activeOutput.sections.map((section) => (
@@ -233,6 +272,7 @@ export default function App() {
                   <span key={guardrail}>{guardrail}</span>
                 ))}
               </div>
+              {exportStatus ? <p className="export-status">{exportStatus}</p> : null}
             </>
           ) : (
             <p>Route a command to generate the first structured agent draft.</p>

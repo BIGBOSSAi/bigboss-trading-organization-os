@@ -34,6 +34,7 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - Browser-local task and memory persistence; no API keys, live trading, or external publishing integrations yet
 - Approval workflow states: `drafted`, `needs-approval`, `approved`, `rejected`, and `completed`
 - Agent Output Workspace with deterministic templates for Dean, Ledger, Forge, Voice, Scout, and Launch
+- Generated drafts can be copied as Markdown or downloaded as `.md` files from the browser.
 
 ## Known Commands
 

@@ -223,6 +223,19 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.workspace-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  min-width: 170px;
+}
+
+.workspace-actions button {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .output-sections {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -257,6 +270,12 @@ button:disabled {
   color: #ffb4bd;
   background: rgba(220, 53, 69, 0.08);
   font-size: 13px;
+}
+
+.export-status {
+  margin: 12px 0 0;
+  color: #9ee6af;
+  font-weight: 800;
 }
 
 .provider-list {

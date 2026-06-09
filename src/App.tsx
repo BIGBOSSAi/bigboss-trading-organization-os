@@ -9,6 +9,7 @@ import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
 import { routeCommand, type RouteResult } from "./domain/router";
+import { resolveTaskSelection } from "./domain/taskSelection";
 
 const starterCommands = [
   "Build a liquidity lesson for AI Trading College",
@@ -30,6 +31,7 @@ export default function App() {
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(() => localBrainStore?.loadSnapshot().tasks[0]?.id);
 
   useEffect(() => {
     let active = true;
@@ -42,8 +44,7 @@ export default function App() {
     };
   }, []);
 
-  const activeTask = tasks[0];
-  const activeOutput = outputs.find((output) => output.taskId === activeTask?.id) ?? outputs[0];
+  const { activeTask, activeOutput } = resolveTaskSelection(tasks, outputs, selectedTaskId);
   const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
   const openTasks = useMemo(
     () =>
@@ -66,6 +67,7 @@ export default function App() {
       const memoryEntry = localBrainStore?.createMemoryEntryFromTask(task);
       const output = generateAgentOutput(task);
       setProviderReport(checkedProviders);
+      setSelectedTaskId(task.id);
       setTasks((current) => {
         if (current[0]?.command === task.command && current[0]?.agentId === task.agentId) {
           return current;
@@ -93,6 +95,7 @@ export default function App() {
         return nextOutputs;
       });
       setRoutes((current) => [task.route, ...current].slice(0, 6));
+      setExportStatus("");
     } finally {
       setIsRouting(false);
     }
@@ -297,8 +300,15 @@ export default function App() {
           <p className="panel-label">Task queue</p>
           <ul className="task-list">
             {(activeTask ? tasks : openTasks).map((task) => (
-              <li key={task.id}>
-                {"text" in task ? task.text : `${task.route.agent.name}: ${task.command} (${task.workflow.status})`}
+              <li className={"text" in task ? undefined : task.id === activeTask?.id ? "selected-task" : undefined} key={task.id}>
+                {"text" in task ? (
+                  task.text
+                ) : (
+                  <button className="task-select-button" type="button" onClick={() => setSelectedTaskId(task.id)}>
+                    <span>{task.route.agent.name}: {task.command}</span>
+                    <strong>{task.workflow.status}</strong>
+                  </button>
+                )}
               </li>
             ))}
           </ul>

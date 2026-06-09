@@ -362,6 +362,31 @@ button:disabled {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.task-list li.selected-task {
+  border-color: #9ee6af;
+  background: rgba(158, 230, 175, 0.1);
+}
+
+.task-select-button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: auto;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-select-button:hover {
+  background: transparent;
+}
+
+.task-select-button span {
+  color: #c7c1ad;
+}
+
 .task-list strong {
   color: #f7f4ea;
   text-transform: capitalize;

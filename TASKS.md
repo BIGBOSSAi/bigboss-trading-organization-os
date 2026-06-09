@@ -29,6 +29,7 @@
 - [x] Add output workspace for agent-generated drafts.
 - [x] Add per-agent task templates for Dean, Ledger, Forge, Voice, Scout, and Launch.
 - [x] Add export/copy actions for generated drafts.
+- [x] Add task selection so task detail and output workspace follow clicked task rows.
 
 ## Next
 

@@ -280,6 +280,42 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.guidance-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(212, 175, 55, 0.055);
+}
+
+.guidance-panel p {
+  margin-bottom: 0;
+}
+
+.guidance-panel ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.command-snippets {
+  display: grid;
+  gap: 8px;
+}
+
+.command-snippets code {
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 9px 10px;
+  color: #f7f4ea;
+  background: #0d0d0d;
+  overflow-wrap: anywhere;
+}
+
 .output-sections {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

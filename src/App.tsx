@@ -10,6 +10,7 @@ import { agents, productVault } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
 import { createLocalModelClient, type ModelDiscoveryResult } from "./domain/localModelClient";
+import { getOllamaGuidance } from "./domain/ollamaGuidance";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -61,6 +62,7 @@ export default function App() {
 
   const { activeTask, activeOutput } = resolveTaskSelection(tasks, outputs, selectedTaskId);
   const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
+  const ollamaGuidance = getOllamaGuidance(modelDiscovery);
   const openTasks = useMemo(
     () =>
       activeRoute.nextActions.map((action, index) => ({
@@ -401,6 +403,24 @@ export default function App() {
             </button>
           </div>
           {brainResponse ? <pre className="brain-response">{brainResponse}</pre> : null}
+          <div className="guidance-panel">
+            <div>
+              <h3>{ollamaGuidance.title}</h3>
+              <p>{ollamaGuidance.summary}</p>
+            </div>
+            {ollamaGuidance.commands.length ? (
+              <div className="command-snippets">
+                {ollamaGuidance.commands.map((commandText) => (
+                  <code key={commandText}>{commandText}</code>
+                ))}
+              </div>
+            ) : null}
+            <ul>
+              {ollamaGuidance.nextActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+          </div>
         </section>
       </section>
 

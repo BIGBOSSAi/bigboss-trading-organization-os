@@ -92,4 +92,21 @@ describe("createLocalBrainStore", () => {
 
     expect(store.loadOutputs()).toEqual([output]);
   });
+
+  it("saves and loads the preferred local model", () => {
+    const storage = new MemoryStorage();
+    const store = createLocalBrainStore(storage);
+
+    store.saveSettings({ preferredModel: "qwen3-coder:latest" });
+
+    expect(store.loadSettings().preferredModel).toBe("qwen3-coder:latest");
+  });
+
+  it("returns empty settings when stored settings are corrupt", () => {
+    const storage = new MemoryStorage();
+    storage.setItem("bigboss.hermes.settings.v1", "{bad json");
+    const store = createLocalBrainStore(storage);
+
+    expect(store.loadSettings()).toEqual({});
+  });
 });

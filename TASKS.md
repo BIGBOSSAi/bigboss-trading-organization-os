@@ -35,10 +35,19 @@
 - [x] Add Ollama start/repair guidance when local brain is offline.
 - [x] Add one-click copy buttons for Ollama repair commands.
 - [x] Add provider-backed generation when a local model is healthy.
+- [x] Add durable shared memory storage (filesystem Markdown store via Vite API, writing into the AI-Brain Obsidian vault, with browser-only fallback).
+- [x] Wire real LLM generation through the FCC proxy (NVIDIA NIM) with Ollama fallback, server-proxied via a `/api/llm` Vite boundary so keys stay server-side.
+
+- [x] Parallel multi-agent missions: decompose one goal into subtasks across agents, run them in dependency waves (parallel within a wave) with an inter-agent message log, persist the mission to shared memory.
+
+- [x] Voice command control: push-to-talk speech-to-text for commands ("route ..."/"mission ...") and text-to-speech read-back of agent output (Web Speech API, feature-detected).
+- [x] One-click launcher (`Start-BIGBoss-OS.cmd`/`.ps1`): starts Ollama + FCC proxy + cockpit and opens the dashboard.
 
 ## Next
 
-- [ ] Add durable shared memory storage.
+- [ ] Configure best model per FCC provider (pending model-id confirmation; FCC discovers models live via Refresh once each key is set).
+- [ ] Surface durable memory entries in the cockpit memory panel (open/edit notes).
+- [ ] Persist full mission transcript (per-agent outputs + message log) to the vault, not just the summary.
 - [ ] Add richer agent output sections and version history.
 - [ ] Add GitHub-backed export path after local file export is proven.
 - [ ] Add model selection persistence and preferred local model setting.

@@ -6,12 +6,19 @@ import {
   updateAgentOutputMarkdown,
   type AgentOutputDraft,
 } from "./domain/agentOutputs";
-import { agents, productVault } from "./domain/agents";
+import { agents, productVault, type AgentId } from "./domain/agents";
 import { createHermesBridge, transitionTask, type HermesTaskRecord, type ProviderStatusReport, type TaskWorkflowAction } from "./domain/hermesBridge";
 import { createLocalBrainStore, type LocalMemoryEntry } from "./domain/localBrainStore";
+import { createDurableMemoryClient } from "./domain/durableMemoryClient";
+import type { DurableMemoryEntry, DurableMemoryStatus } from "./domain/durableMemory";
 import { createLocalModelClient, type ModelDiscoveryResult } from "./domain/localModelClient";
 import { getOllamaGuidance } from "./domain/ollamaGuidance";
 import { enhanceOutputWithProvider } from "./domain/providerGeneration";
+import { createLlmClient, type LlmHealthReport } from "./domain/llmClient";
+import { planMission } from "./domain/missionPlanner";
+import { runMission } from "./domain/missionRunner";
+import type { Mission } from "./domain/mission";
+import { createSpeechController, interpretVoiceCommand, stripMarkdownForSpeech } from "./domain/voice";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -24,6 +31,44 @@ const starterCommands = [
 const hermesBridge = createHermesBridge();
 const localModelClient = createLocalModelClient();
 const localBrainStore = typeof window !== "undefined" ? createLocalBrainStore(window.localStorage) : null;
+const durableMemoryClient = createDurableMemoryClient();
+const llmClient = createLlmClient();
+const speech = createSpeechController();
+
+function durableToLocalMemoryEntry(entry: DurableMemoryEntry): LocalMemoryEntry {
+  return {
+    id: entry.id,
+    folderId: entry.folderId,
+    summary: entry.summary,
+    sourceTaskId: entry.sourceTaskId,
+    agentId: entry.agentId as AgentId,
+    createdAt: entry.createdAt,
+  };
+}
+
+function mergeMemoryEntries(durable: DurableMemoryEntry[], local: LocalMemoryEntry[]): LocalMemoryEntry[] {
+  const seen = new Set<string>();
+  const merged: LocalMemoryEntry[] = [];
+  for (const entry of [...durable.map(durableToLocalMemoryEntry), ...local]) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    merged.push(entry);
+  }
+  return merged.slice(0, 24);
+}
+
+function toDurableMemoryEntry(entry: LocalMemoryEntry, title: string, intent: string): DurableMemoryEntry {
+  return {
+    id: entry.id,
+    folderId: entry.folderId,
+    title,
+    summary: entry.summary,
+    agentId: entry.agentId,
+    sourceTaskId: entry.sourceTaskId,
+    createdAt: entry.createdAt,
+    tags: [intent, entry.agentId],
+  };
+}
 
 export default function App() {
   const [command, setCommand] = useState(starterCommands[0]);
@@ -33,6 +78,12 @@ export default function App() {
     () => localBrainStore?.loadSnapshot().memoryEntries ?? [],
   );
   const [outputs, setOutputs] = useState<AgentOutputDraft[]>(() => localBrainStore?.loadSnapshot().outputs ?? []);
+  const [durableMemory, setDurableMemory] = useState<DurableMemoryStatus | null>(null);
+  const [aiBrain, setAiBrain] = useState<LlmHealthReport | null>(null);
+  const [mission, setMission] = useState<Mission | null>(null);
+  const [isRunningMission, setIsRunningMission] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("");
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -57,6 +108,16 @@ export default function App() {
       setModelDiscovery(result);
       setSelectedModel(result.models[0] ?? "");
     });
+    durableMemoryClient.load().then((result) => {
+      if (!active) return;
+      setDurableMemory(result.status);
+      if (result.entries.length > 0) {
+        setMemoryEntries((current) => mergeMemoryEntries(result.entries, current));
+      }
+    });
+    llmClient.health().then((report) => {
+      if (active) setAiBrain(report);
+    });
 
     return () => {
       active = false;
@@ -77,8 +138,13 @@ export default function App() {
 
   async function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmed = command.trim();
+    await routeAndCreate(command);
+  }
+
+  async function routeAndCreate(rawCommand: string) {
+    const trimmed = rawCommand.trim();
     if (!trimmed || isRouting) return;
+    setCommand(trimmed);
     setIsRouting(true);
 
     try {
@@ -105,6 +171,9 @@ export default function App() {
           localBrainStore?.saveMemoryEntries(nextEntries);
           return nextEntries;
         });
+        durableMemoryClient
+          .save(toDurableMemoryEntry(memoryEntry, output.title, task.intent))
+          .then((status) => setDurableMemory(status));
       }
       setOutputs((current) => {
         if (current.some((draft) => draft.id === output.id)) {
@@ -207,16 +276,22 @@ export default function App() {
   }
 
   async function enhanceActiveOutput() {
-    if (!activeTask || !activeOutput || !selectedModel || isEnhancingOutput) return;
+    if (!activeTask || !activeOutput || isEnhancingOutput) return;
+    if (!aiBrain?.available && !selectedModel) return;
     setIsEnhancingOutput(true);
-    setExportStatus("Asking local brain to enhance this draft...");
+    setExportStatus("Asking the AI brain to enhance this draft...");
+    let usedProvider = "ai-brain";
 
     try {
       const result = await enhanceOutputWithProvider({
         task: activeTask,
         output: activeOutput,
-        model: selectedModel,
-        generate: localModelClient.generate,
+        model: aiBrain?.primary ?? selectedModel ?? "ai-brain",
+        generate: async ({ prompt }) => {
+          const generated = await llmClient.generate({ prompt });
+          usedProvider = generated.provider;
+          return { status: generated.status, response: generated.text };
+        },
       });
       if (result.status === "complete") {
         setOutputs((current) => {
@@ -224,11 +299,74 @@ export default function App() {
           localBrainStore?.saveOutputs(nextOutputs);
           return nextOutputs;
         });
+        setExportStatus(`Enhanced via ${usedProvider}. Saved locally.`);
+      } else {
+        setExportStatus(result.message);
       }
-      setExportStatus(result.message);
     } finally {
       setIsEnhancingOutput(false);
     }
+  }
+
+  async function runMissionFromCommand(goalArg?: string) {
+    const goal = (goalArg ?? command).trim();
+    if (!goal || isRunningMission) return;
+    setCommand(goal);
+    setIsRunningMission(true);
+
+    try {
+      const plan = planMission(goal);
+      const result = await runMission(plan, { generate: (request) => llmClient.generate(request) });
+      setMission(result);
+      durableMemoryClient
+        .save({
+          id: result.id,
+          folderId: "tasks",
+          title: `Mission: ${result.goal}`,
+          summary: result.summary,
+          agentId: result.results[0]?.agentId ?? "scout",
+          sourceTaskId: result.id,
+          createdAt: result.createdAt,
+          tags: ["mission", ...result.results.map((subtaskResult) => subtaskResult.agentId)],
+        })
+        .then((status) => setDurableMemory(status));
+    } finally {
+      setIsRunningMission(false);
+    }
+  }
+
+  function toggleListening() {
+    if (!speech.sttSupported) {
+      setVoiceStatus("Voice input is not supported in this browser (try Chrome/Edge).");
+      return;
+    }
+    if (isListening) {
+      speech.stopListening();
+      return;
+    }
+    setVoiceStatus("Listening... say e.g. 'mission turn this lesson into a funnel'.");
+    setIsListening(true);
+    speech.startListening({
+      onTranscript: (transcript) => {
+        const command = interpretVoiceCommand(transcript);
+        setCommand(command.text);
+        setVoiceStatus(`Heard (${command.action}): "${transcript}"`);
+        if (command.action === "mission") void runMissionFromCommand(command.text);
+        else if (command.action === "route") void routeAndCreate(command.text);
+      },
+      onEnd: () => setIsListening(false),
+      onError: (message) => {
+        setVoiceStatus(`Voice error: ${message}`);
+        setIsListening(false);
+      },
+    });
+  }
+
+  function speakActive() {
+    const spoken = activeOutput
+      ? `${activeOutput.title}. ${stripMarkdownForSpeech(formatAgentOutputAsMarkdown(activeOutput))}`
+      : mission?.summary ?? "";
+    if (spoken.trim()) speech.speak(stripMarkdownForSpeech(spoken));
   }
 
   return (
@@ -238,8 +376,13 @@ export default function App() {
           <p className="eyebrow">BIGBoss Trading Organization OS</p>
           <h1>Agent Workforce Command Center</h1>
         </div>
-        <div className="status-pill">
-          {providerReport ? `Provider: ${providerReport.primary.label}` : "Checking local brain"}
+        <div className="status-pills">
+          <div className="status-pill">
+            {providerReport ? `Provider: ${providerReport.primary.label}` : "Checking local brain"}
+          </div>
+          <div className="status-pill">
+            {aiBrain ? `AI Brain: ${aiBrain.available ? aiBrain.primary : "offline"}` : "Checking AI brain"}
+          </div>
         </div>
       </header>
 
@@ -263,6 +406,16 @@ export default function App() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="voice-row">
+            <button
+              type="button"
+              className={isListening ? "voice-button listening" : "voice-button"}
+              onClick={toggleListening}
+            >
+              {isListening ? "🎤 Listening… (tap to stop)" : "🎤 Speak a command"}
+            </button>
+            {voiceStatus ? <span className="voice-status">{voiceStatus}</span> : null}
           </div>
         </form>
 
@@ -327,9 +480,61 @@ export default function App() {
         </section>
 
         <section className="panel">
-          <p className="panel-label">Local Memory</p>
+          <p className="panel-label">Shared Memory</p>
           <h2>{memoryEntries.length} Saved</h2>
-          <p>Task records and memory entries are stored in this browser only.</p>
+          <p>
+            {durableMemory?.available
+              ? `Durable on disk: ${durableMemory.root ?? "memory store"}.`
+              : durableMemory
+                ? `${durableMemory.detail} Browser-only fallback in use.`
+                : "Checking durable memory store..."}
+          </p>
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel mission-panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Multi-Agent Mission</p>
+              <h2>{mission ? mission.goal : "No mission yet"}</h2>
+              <p>{mission ? mission.summary : "Decompose one goal across multiple agents running in parallel."}</p>
+            </div>
+            <button type="button" onClick={() => runMissionFromCommand()} disabled={isRunningMission || !command.trim()}>
+              {isRunningMission ? "Running mission..." : "Run Mission From Command"}
+            </button>
+          </div>
+          {mission ? (
+            <>
+              {mission.approvalRequired ? (
+                <p className="export-status">Approval required before any high-risk action in this mission.</p>
+              ) : null}
+              <div className="mission-lanes">
+                {mission.results.map((result) => (
+                  <article className="mission-lane" key={result.subtaskId}>
+                    <h3>
+                      {agents.find((agent) => agent.id === result.agentId)?.name ?? result.agentId}
+                      <span className="status-pill">{result.provider}</span>
+                    </h3>
+                    <p>{result.output}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="mission-log">
+                <p className="panel-label">Inter-Agent Log</p>
+                <ul className="task-list">
+                  {mission.messages.map((message, index) => (
+                    <li key={`${message.from}-${index}`}>
+                      <strong>
+                        {message.from} → {message.to}
+                      </strong>{" "}
+                      {message.summary}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : null}
         </section>
       </section>
 
@@ -351,6 +556,9 @@ export default function App() {
                   <button type="button" onClick={downloadActiveOutput}>
                     Download .md
                   </button>
+                  <button type="button" onClick={speakActive} disabled={!speech.ttsSupported}>
+                    🔊 Read aloud
+                  </button>
                   {isEditingOutput ? (
                     <button type="button" onClick={() => setIsEditingOutput(false)}>
                       Preview
@@ -360,8 +568,12 @@ export default function App() {
                       Edit Draft
                     </button>
                   )}
-                  <button type="button" onClick={enhanceActiveOutput} disabled={!selectedModel || isEnhancingOutput}>
-                    {isEnhancingOutput ? "Enhancing..." : "Enhance With Local Brain"}
+                  <button
+                    type="button"
+                    onClick={enhanceActiveOutput}
+                    disabled={isEnhancingOutput || (!aiBrain?.available && !selectedModel)}
+                  >
+                    {isEnhancingOutput ? "Enhancing..." : "Enhance With AI Brain"}
                   </button>
                 </div>
               </div>

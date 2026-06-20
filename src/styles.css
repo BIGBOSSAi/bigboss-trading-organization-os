@@ -77,6 +77,74 @@ li {
   line-height: 1.55;
 }
 
+.status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mission-lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.mission-lane {
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mission-lane h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mission-lane p {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.mission-log {
+  margin-top: 14px;
+}
+
+.voice-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.voice-button {
+  background: transparent;
+  color: #f7f4ea;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+}
+
+.voice-button.listening {
+  background: rgba(220, 53, 69, 0.18);
+  border-color: rgba(220, 53, 69, 0.6);
+  color: #ffb4bd;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.voice-status {
+  color: #c7c1ad;
+  font-size: 13px;
+}
+
 .status-pill,
 .route-meta span {
   border: 1px solid rgba(212, 175, 55, 0.26);

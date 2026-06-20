@@ -5,6 +5,7 @@ import type { HermesTaskRecord, MemoryFolder, TaskWorkflow } from "./hermesBridg
 const taskStorageKey = "bigboss.hermes.tasks.v1";
 const memoryStorageKey = "bigboss.hermes.memory.v1";
 const outputStorageKey = "bigboss.hermes.outputs.v1";
+const settingsStorageKey = "bigboss.hermes.settings.v1";
 
 export type MemoryFolderId = MemoryFolder["id"];
 
@@ -21,6 +22,11 @@ export interface LocalBrainSnapshot {
   tasks: HermesTaskRecord[];
   memoryEntries: LocalMemoryEntry[];
   outputs: AgentOutputDraft[];
+  settings: LocalBrainSettings;
+}
+
+export interface LocalBrainSettings {
+  preferredModel?: string;
 }
 
 export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setItem">) {
@@ -48,11 +54,20 @@ export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setIte
     storage.setItem(outputStorageKey, JSON.stringify(outputs.slice(0, 20)));
   }
 
+  function loadSettings(): LocalBrainSettings {
+    return readObject<LocalBrainSettings>(storage, settingsStorageKey) ?? {};
+  }
+
+  function saveSettings(settings: LocalBrainSettings): void {
+    storage.setItem(settingsStorageKey, JSON.stringify(settings));
+  }
+
   function loadSnapshot(): LocalBrainSnapshot {
     return {
       tasks: loadTasks(),
       memoryEntries: loadMemoryEntries(),
       outputs: loadOutputs(),
+      settings: loadSettings(),
     };
   }
 
@@ -71,10 +86,12 @@ export function createLocalBrainStore(storage: Pick<Storage, "getItem" | "setIte
     createMemoryEntryFromTask,
     loadMemoryEntries,
     loadOutputs,
+    loadSettings,
     loadSnapshot,
     loadTasks,
     saveMemoryEntries,
     saveOutputs,
+    saveSettings,
     saveTasks,
   };
 }
@@ -87,6 +104,17 @@ function readArray<T>(storage: Pick<Storage, "getItem">, key: string): T[] {
     return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch {
     return [];
+  }
+}
+
+function readObject<T>(storage: Pick<Storage, "getItem">, key: string): T | undefined {
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as T) : undefined;
+  } catch {
+    return undefined;
   }
 }
 

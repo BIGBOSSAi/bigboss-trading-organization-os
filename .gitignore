@@ -4,6 +4,10 @@ node_modules/
 dist/
 *.pid
 
+# Local-only config and durable memory (keep private business memory out of git)
+.env.local
+/memory/
+
 # Local scratch areas
 work/*
 !work/.gitkeep

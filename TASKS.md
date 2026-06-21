@@ -42,12 +42,16 @@
 
 - [x] Voice command control: push-to-talk speech-to-text for commands ("route ..."/"mission ...") and text-to-speech read-back of agent output (Web Speech API, feature-detected).
 - [x] One-click launcher (`Start-BIGBoss-OS.cmd`/`.ps1`): starts Ollama + FCC proxy + cockpit and opens the dashboard.
+- [x] Set NVIDIA NIM model profile (balanced power): cockpit + FCC tiers use verified-live model IDs (deepseek-v4-pro / qwen3.5-397b / deepseek-v4-flash).
+- [x] Persist full mission transcript (final result + per-agent outputs + inter-agent log) to the vault as one Markdown note.
+- [x] Autonomous communication-first mission flow: the brain synthesizes a single final deliverable from all agents (auto-enhanced before reaching the human); voice read-back of results and spoken approval requests; "Voice replies" toggle.
 
 ## Next
 
-- [ ] Configure best model per FCC provider (pending model-id confirmation; FCC discovers models live via Refresh once each key is set).
-- [ ] Surface durable memory entries in the cockpit memory panel (open/edit notes).
-- [ ] Persist full mission transcript (per-agent outputs + message log) to the vault, not just the summary.
+- [ ] Product templates: one-click copy/scaffold per product type (course, lead magnet, funnel, etc.).
+- [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).
+- [ ] Configure direct FCC providers (Groq, Cerebras, Gemini, etc.): add key in Admin UI + Refresh models.
+- [ ] Surface durable memory / mission notes in the cockpit (browse + edit).
 - [ ] Add richer agent output sections and version history.
 - [ ] Add GitHub-backed export path after local file export is proven.
 - [ ] Add model selection persistence and preferred local model setting.

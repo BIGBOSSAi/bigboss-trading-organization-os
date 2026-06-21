@@ -145,6 +145,29 @@ li {
   font-size: 13px;
 }
 
+.voice-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c7c1ad;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mission-final {
+  margin-top: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.mission-final p {
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow: auto;
+}
+
 .status-pill,
 .route-meta span {
   border: 1px solid rgba(212, 175, 55, 0.26);

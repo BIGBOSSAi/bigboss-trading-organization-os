@@ -17,7 +17,7 @@ import { enhanceOutputWithProvider } from "./domain/providerGeneration";
 import { createLlmClient, type LlmHealthReport } from "./domain/llmClient";
 import { planMission } from "./domain/missionPlanner";
 import { runMission } from "./domain/missionRunner";
-import type { Mission } from "./domain/mission";
+import { renderMissionMarkdown, type Mission } from "./domain/mission";
 import { createSpeechController, interpretVoiceCommand, stripMarkdownForSpeech } from "./domain/voice";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
@@ -84,6 +84,7 @@ export default function App() {
   const [isRunningMission, setIsRunningMission] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
+  const [voiceReplies, setVoiceReplies] = useState(speech.ttsSupported);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -186,6 +187,11 @@ export default function App() {
       setRoutes((current) => [task.route, ...current].slice(0, 6));
       setExportStatus("");
       setIsEditingOutput(false);
+      if (task.approval.status === "required") {
+        speakIfEnabled(`Approval required for ${task.command}.`);
+      } else {
+        speakIfEnabled(`${output.title}. ${output.summary}`);
+      }
     } finally {
       setIsRouting(false);
     }
@@ -318,20 +324,33 @@ export default function App() {
       const plan = planMission(goal);
       const result = await runMission(plan, { generate: (request) => llmClient.generate(request) });
       setMission(result);
+      // Persist the full transcript (final result + every agent output + the log) to the vault.
       durableMemoryClient
         .save({
           id: result.id,
           folderId: "tasks",
           title: `Mission: ${result.goal}`,
-          summary: result.summary,
+          summary: renderMissionMarkdown(result),
           agentId: result.results[0]?.agentId ?? "scout",
           sourceTaskId: result.id,
           createdAt: result.createdAt,
           tags: ["mission", ...result.results.map((subtaskResult) => subtaskResult.agentId)],
         })
         .then((status) => setDurableMemory(status));
+      // Communication-first: the brain speaks the result, or asks for approval.
+      if (result.approvalRequired) {
+        speakIfEnabled(`Approval required before completing the mission for ${result.goal}. Here is the draft: ${result.finalResult}`);
+      } else {
+        speakIfEnabled(`Mission complete for ${result.goal}. ${result.finalResult}`);
+      }
     } finally {
       setIsRunningMission(false);
+    }
+  }
+
+  function speakIfEnabled(text: string) {
+    if (voiceReplies && speech.ttsSupported && text.trim()) {
+      speech.speak(stripMarkdownForSpeech(text));
     }
   }
 
@@ -415,6 +434,15 @@ export default function App() {
             >
               {isListening ? "🎤 Listening… (tap to stop)" : "🎤 Speak a command"}
             </button>
+            <label className="voice-toggle">
+              <input
+                type="checkbox"
+                checked={voiceReplies}
+                onChange={(event) => setVoiceReplies(event.target.checked)}
+                disabled={!speech.ttsSupported}
+              />
+              Voice replies
+            </label>
             {voiceStatus ? <span className="voice-status">{voiceStatus}</span> : null}
           </div>
         </form>
@@ -508,6 +536,21 @@ export default function App() {
             <>
               {mission.approvalRequired ? (
                 <p className="export-status">Approval required before any high-risk action in this mission.</p>
+              ) : null}
+              {mission.finalResult ? (
+                <div className="mission-final">
+                  <div className="workspace-heading">
+                    <p className="panel-label">Final Result (brain-synthesized)</p>
+                    <button
+                      type="button"
+                      onClick={() => speech.speak(stripMarkdownForSpeech(mission.finalResult))}
+                      disabled={!speech.ttsSupported}
+                    >
+                      🔊 Read final result
+                    </button>
+                  </div>
+                  <p>{mission.finalResult}</p>
+                </div>
               ) : null}
               <div className="mission-lanes">
                 {mission.results.map((result) => (

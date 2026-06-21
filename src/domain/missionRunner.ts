@@ -16,6 +16,7 @@ export interface RunMissionOptions {
   generate: (request: { prompt: string; system?: string }) => Promise<MissionGenerateResult>;
   now?: () => Date;
   fallback?: (subtask: MissionSubtask) => string;
+  synthesize?: boolean;
 }
 
 const agentById = Object.fromEntries(agents.map((agent) => [agent.id, agent]));
@@ -63,10 +64,18 @@ export async function runMission(plan: MissionPlan, options: RunMissionOptions):
     remaining = remaining.filter((subtask) => !waveAgents.has(subtask.agentId));
   }
 
+  // The router/brain enhances and combines all agent outputs into one final
+  // deliverable before it reaches the human (autonomous "enhance before final").
+  const summary = buildSummary(plan, results);
+  let finalResult = summary;
+  if (options.synthesize !== false && results.length > 0) {
+    finalResult = await synthesize(plan, results, options.generate, summary);
+  }
+
   messages.push({
     from: "router",
     to: "all",
-    summary: `Synthesized ${results.length} agent result(s) for the goal.`,
+    summary: `Synthesized ${results.length} agent result(s) into the final deliverable.`,
     at: now().toISOString(),
   });
 
@@ -78,8 +87,44 @@ export async function runMission(plan: MissionPlan, options: RunMissionOptions):
     subtasks: plan.subtasks,
     results,
     messages,
-    summary: buildSummary(plan, results),
+    summary,
+    finalResult,
   };
+}
+
+async function synthesize(
+  plan: MissionPlan,
+  results: MissionSubtaskResult[],
+  generate: RunMissionOptions["generate"],
+  fallbackSummary: string,
+): Promise<string> {
+  const outputs = results
+    .map((result) => `## ${agentById[result.agentId].name}\n${result.output}`)
+    .join("\n\n");
+
+  const prompt = [
+    "You are the BIGBoss Brain Router. Combine the specialist agent outputs below into ONE clear, final deliverable for the goal.",
+    "Keep the trading-education business focus. Do not add live-trading instructions, order-execution steps, or financial promises.",
+    "Keep any human-approval requirements explicit for publishing, bot readiness, pricing, and high-risk claims.",
+    "",
+    `Goal: "${plan.goal}"`,
+    "",
+    "Specialist outputs:",
+    outputs,
+    "",
+    "Return only the final combined deliverable in clean Markdown.",
+  ].join("\n");
+
+  try {
+    const generated = await generate({ prompt });
+    if (generated.status === "complete" && generated.text.trim()) {
+      return generated.text.trim();
+    }
+  } catch {
+    // fall through to deterministic summary
+  }
+
+  return fallbackSummary;
 }
 
 async function runSubtask(

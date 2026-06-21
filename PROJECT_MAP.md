@@ -32,6 +32,8 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `src/domain/missionPlanner.ts`: deterministic decomposition of a goal into agent subtasks with dependency edges.
 - `src/domain/missionRunner.ts`: runs mission subtasks in dependency waves with inter-agent message passing and deterministic fallback.
 - `src/domain/voice.ts`: Web Speech API wrapper for voice commands (STT) and read-back (TTS), with pure command-interpretation helpers.
+- `src/domain/productTemplates.ts`: registry of product types + deterministic scaffold + prompt builder.
+- `src/domain/productBuilder.ts`: AI-brain-filled product scaffold with deterministic fallback.
 - `Start-BIGBoss-OS.ps1` / `Start-BIGBoss-OS.cmd`: one-click launcher for Ollama + FCC proxy + cockpit, then opens the dashboard.
 - `outputs/`: user-facing deliverables.
 - `work/`: drafts, scratch files, and intermediate work.

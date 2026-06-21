@@ -46,9 +46,9 @@
 - [x] Persist full mission transcript (final result + per-agent outputs + inter-agent log) to the vault as one Markdown note.
 - [x] Autonomous communication-first mission flow: the brain synthesizes a single final deliverable from all agents (auto-enhanced before reaching the human); voice read-back of results and spoken approval requests; "Voice replies" toggle.
 
-## Next
+- [x] Product templates: one-click Product Builder (Launch agent) scaffolds 7 product types via the AI brain (deterministic fallback) and saves each asset to the vault.
 
-- [ ] Product templates: one-click copy/scaffold per product type (course, lead magnet, funnel, etc.).
+## Next
 - [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).
 - [ ] Configure direct FCC providers (Groq, Cerebras, Gemini, etc.): add key in Admin UI + Refresh models.
 - [ ] Surface durable memory / mission notes in the cockpit (browse + edit).

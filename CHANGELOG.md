@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-21
+
+- Added a one-click Product Builder for the Launch agent (`src/domain/productTemplates.ts` + `src/domain/productBuilder.ts`): a registry of 7 product types (course, lead magnet, funnel, ebook, signal/education service, masterclass, email sequence), each scaffolded by the AI brain from the command-box topic with a deterministic fallback, then saved to the vault under `organization`. Cockpit panel supports copy / download / read-aloud. 85 tests passing; build clean.
+
 ## 2026-06-20
 
 - Made missions autonomous and communication-first: the mission runner now adds a brain synthesis pass that combines and enhances all agent outputs into one final deliverable before it reaches the human (`finalResult`), and `renderMissionMarkdown` writes the full transcript (final result + every agent output + inter-agent log) to the vault as one Markdown note. The cockpit shows the synthesized Final Result, auto-speaks the result (or a spoken approval request when required) via a "Voice replies" toggle, and adds read-back buttons — so a spoken goal runs the whole multi-agent mission and reports back by voice with no manual typing. Approval gates remain human. Verified with `npm test` (77 passing) and `npm run build`.

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLlmGateway, extractAnthropicText } from "./llmGateway";
+import { createLlmGateway, extractAnthropicText, isProviderErrorText } from "./llmGateway";
+
+const FCC_ERROR_SSE = [
+  "event: content_block_delta",
+  'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Provider API request failed.\\n\\nProvider exception:\\nConnection error."}}',
+  "",
+].join("\n");
 
 const SSE_SAMPLE = [
   "event: message_start",
@@ -63,6 +69,44 @@ describe("createLlmGateway.generate", () => {
 
     expect(result.provider).toBe("ollama");
     expect(result.text).toBe("Local fallback answer.");
+  });
+
+  it("treats an FCC upstream-error payload as failure (not a successful answer)", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes("/v1/messages")) return streamResponse(FCC_ERROR_SSE);
+      throw new Error("ollama offline");
+    });
+    const gateway = createLlmGateway({ fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    const result = await gateway.generate({ prompt: "Hi" });
+
+    // Must NOT surface the error text as a completed FCC result.
+    expect(result.provider).not.toBe("fcc");
+    expect(result.text).not.toContain("Provider API request failed");
+  });
+
+  it("retries FCC once on a transient failure, then succeeds", async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes("/v1/messages")) {
+        calls += 1;
+        if (calls === 1) return streamResponse(FCC_ERROR_SSE); // transient error first
+        return streamResponse(SSE_SAMPLE); // succeeds on retry
+      }
+      throw new Error("ollama offline");
+    });
+    const gateway = createLlmGateway({ fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    const result = await gateway.generate({ prompt: "Hi" });
+
+    expect(calls).toBe(2);
+    expect(result.provider).toBe("fcc");
+    expect(result.text).toBe("Hello trader");
+  });
+
+  it("detects provider-error text", () => {
+    expect(isProviderErrorText("Provider API request failed. Connection error.")).toBe(true);
+    expect(isProviderErrorText("Market liquidity is how easily you can trade.")).toBe(false);
   });
 
   it("reports no provider when both are unreachable", async () => {

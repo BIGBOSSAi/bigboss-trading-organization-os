@@ -89,7 +89,10 @@ export function createLlmGateway(options: LlmGatewayOptions = {}): LlmGateway {
 
       if (!response.ok) return null;
       const text = extractAnthropicText(await response.text());
-      return text || null;
+      // FCC wraps upstream failures in a normal 200 stream whose text is the error
+      // message. Treat those as failures so we fall back instead of surfacing them.
+      if (!text || isProviderErrorText(text)) return null;
+      return text;
     } catch {
       return null;
     }
@@ -117,7 +120,9 @@ export function createLlmGateway(options: LlmGatewayOptions = {}): LlmGateway {
   }
 
   async function generate(request: LlmGenerateRequest): Promise<LlmGenerateResult> {
-    const fccText = await callFcc(request);
+    // One retry absorbs transient upstream (NVIDIA NIM) connection errors.
+    let fccText = await callFcc(request);
+    if (!fccText) fccText = await callFcc(request);
     if (fccText) {
       return { status: "complete", text: fccText, provider: "fcc", model: fccModel };
     }
@@ -163,6 +168,12 @@ export function createLlmGateway(options: LlmGatewayOptions = {}): LlmGateway {
   }
 
   return { generate, health };
+}
+
+// Detect FCC's upstream-failure payloads, which arrive as a normal 200 stream whose
+// text content is the error message rather than a model answer.
+export function isProviderErrorText(text: string): boolean {
+  return /Provider API request failed|Provider exception:/i.test(text);
 }
 
 // Accumulate the text from an Anthropic Messages stream (SSE). Falls back to parsing

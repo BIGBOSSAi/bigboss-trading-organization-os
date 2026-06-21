@@ -2,6 +2,7 @@
 
 ## 2026-06-21
 
+- Fixed LLM gateway robustness: FCC wraps upstream (NVIDIA NIM) failures in a 200 stream whose text is the error message; the gateway now detects those provider-error payloads (`isProviderErrorText`) and treats them as failures, and retries FCC once on a transient error before falling back to Ollama / deterministic output. Previously the raw error could surface as a "successful" result.
 - Added a one-click Product Builder for the Launch agent (`src/domain/productTemplates.ts` + `src/domain/productBuilder.ts`): a registry of 7 product types (course, lead magnet, funnel, ebook, signal/education service, masterclass, email sequence), each scaffolded by the AI brain from the command-box topic with a deterministic fallback, then saved to the vault under `organization`. Cockpit panel supports copy / download / read-aloud. 85 tests passing; build clean.
 
 ## 2026-06-20

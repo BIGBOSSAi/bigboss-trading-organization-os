@@ -168,6 +168,24 @@ li {
   overflow: auto;
 }
 
+.product-result {
+  margin-top: 14px;
+}
+
+.product-markdown {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border, rgba(212, 175, 55, 0.2));
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(13, 13, 13, 0.9);
+  color: #e8e3d2;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .status-pill,
 .route-meta span {
   border: 1px solid rgba(212, 175, 55, 0.26);

@@ -19,6 +19,8 @@ import { planMission } from "./domain/missionPlanner";
 import { runMission } from "./domain/missionRunner";
 import { renderMissionMarkdown, type Mission } from "./domain/mission";
 import { createSpeechController, interpretVoiceCommand, stripMarkdownForSpeech } from "./domain/voice";
+import { buildProduct } from "./domain/productBuilder";
+import { productTypes, type BuiltProduct } from "./domain/productTemplates";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -85,6 +87,9 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
   const [voiceReplies, setVoiceReplies] = useState(speech.ttsSupported);
+  const [selectedProductType, setSelectedProductType] = useState(productTypes[0].id);
+  const [builtProduct, setBuiltProduct] = useState<BuiltProduct | null>(null);
+  const [isBuildingProduct, setIsBuildingProduct] = useState(false);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -354,6 +359,43 @@ export default function App() {
     }
   }
 
+  async function buildProductFromCommand() {
+    const topic = command.trim();
+    if (!topic || isBuildingProduct) return;
+    setIsBuildingProduct(true);
+    try {
+      const product = await buildProduct(selectedProductType, topic, {
+        generate: (request) => llmClient.generate(request),
+      });
+      setBuiltProduct(product);
+      durableMemoryClient
+        .save({
+          id: product.id,
+          folderId: "organization",
+          title: `${product.typeName}: ${product.topic}`,
+          summary: product.markdown,
+          agentId: "launch",
+          sourceTaskId: product.id,
+          createdAt: product.createdAt,
+          tags: ["product", product.typeId],
+        })
+        .then((status) => setDurableMemory(status));
+      speakIfEnabled(`${product.typeName} scaffolded for ${product.topic}, saved to the product vault.`);
+    } finally {
+      setIsBuildingProduct(false);
+    }
+  }
+
+  function downloadText(filename: string, text: string) {
+    const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   function toggleListening() {
     if (!speech.sttSupported) {
       setVoiceStatus("Voice input is not supported in this browser (try Chrome/Edge).");
@@ -577,6 +619,62 @@ export default function App() {
                 </ul>
               </div>
             </>
+          ) : null}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel product-panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Product Builder (Launch agent)</p>
+              <h2>{builtProduct ? `${builtProduct.typeName}: ${builtProduct.topic}` : "One-click product scaffold"}</h2>
+              <p>Uses the command box as the topic. Pick a product type and scaffold a full asset into the vault.</p>
+            </div>
+            <div className="workspace-actions">
+              <select value={selectedProductType} onChange={(event) => setSelectedProductType(event.target.value)}>
+                {productTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={buildProductFromCommand} disabled={isBuildingProduct || !command.trim()}>
+                {isBuildingProduct ? "Building…" : "Scaffold Product"}
+              </button>
+            </div>
+          </div>
+          {builtProduct ? (
+            <div className="product-result">
+              <div className="guardrail-strip">
+                <span>built via {builtProduct.provider}</span>
+                <span>saved to vault: organization</span>
+              </div>
+              <pre className="product-markdown">{builtProduct.markdown}</pre>
+              <div className="workspace-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigator.clipboard
+                      .writeText(builtProduct.markdown)
+                      .then(() => setExportStatus("Copied product Markdown."))
+                      .catch(() => setExportStatus("Clipboard blocked; use Download."))
+                  }
+                >
+                  Copy Markdown
+                </button>
+                <button type="button" onClick={() => downloadText(`${builtProduct.typeId}-product.md`, builtProduct.markdown)}>
+                  Download .md
+                </button>
+                <button
+                  type="button"
+                  onClick={() => speech.speak(stripMarkdownForSpeech(builtProduct.markdown))}
+                  disabled={!speech.ttsSupported}
+                >
+                  🔊 Read aloud
+                </button>
+              </div>
+            </div>
           ) : null}
         </section>
       </section>

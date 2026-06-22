@@ -8,6 +8,11 @@ dist/
 .env.local
 /memory/
 
+# Whisper local runtime (keep server.py + transcribe.py; ignore venv/models/samples)
+.whisper/.venv/
+.whisper/__pycache__/
+.whisper/*.wav
+
 # Local scratch areas
 work/*
 !work/.gitkeep

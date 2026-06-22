@@ -47,6 +47,7 @@
 - [x] Autonomous communication-first mission flow: the brain synthesizes a single final deliverable from all agents (auto-enhanced before reaching the human); voice read-back of results and spoken approval requests; "Voice replies" toggle.
 
 - [x] Product templates: one-click Product Builder (Launch agent) scaffolds 7 product types via the AI brain (deterministic fallback) and saves each asset to the vault.
+- [x] Local Whisper voice (faster-whisper): private on-device speech-to-text via a persistent model server, proxied through `/api/transcribe`; cockpit mic prefers Whisper and falls back to the browser Web Speech API.
 
 ## Next
 - [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).

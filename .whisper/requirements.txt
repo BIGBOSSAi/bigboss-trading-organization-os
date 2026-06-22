@@ -1,0 +1,4 @@
+# Local Whisper transcription runtime.
+# Setup:  uv venv --python 3.11 .venv  &&  uv pip install --python .venv -r requirements.txt
+# Run:    uv run --python .venv python server.py   (loads model once, serves :8378)
+faster-whisper

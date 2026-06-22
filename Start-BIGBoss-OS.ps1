@@ -71,6 +71,19 @@ if (Test-Port -Port 8082) {
     }
 }
 
+# 2b) Whisper transcription server (local voice, optional)
+if (Test-Port -Port 8378) {
+    Write-Host "[ok]   Whisper server already running on 8378." -ForegroundColor Green
+} elseif (Test-Path (Join-Path $ProjectDir ".whisper\.venv")) {
+    Write-Host "[start] Whisper transcription server..." -ForegroundColor Cyan
+    Start-Process -FilePath "uv" `
+        -ArgumentList "run", "--python", ".venv", "python", "server.py" `
+        -WorkingDirectory (Join-Path $ProjectDir ".whisper") `
+        -WindowStyle Minimized
+} else {
+    Write-Host "[skip] Whisper not installed (.whisper/.venv missing); voice will use the browser API." -ForegroundColor DarkYellow
+}
+
 # 3) Cockpit (Vite dev server)
 if (Test-Port -Port 5173) {
     Write-Host "[ok]   Cockpit already running on 5173." -ForegroundColor Green

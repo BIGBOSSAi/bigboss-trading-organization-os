@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatAgentOutputAsMarkdown,
   generateAgentOutput,
@@ -19,6 +19,7 @@ import { planMission } from "./domain/missionPlanner";
 import { runMission } from "./domain/missionRunner";
 import { renderMissionMarkdown, type Mission } from "./domain/mission";
 import { createSpeechController, interpretVoiceCommand, stripMarkdownForSpeech } from "./domain/voice";
+import { createTranscriptionController } from "./domain/transcriptionClient";
 import { buildProduct } from "./domain/productBuilder";
 import { productTypes, type BuiltProduct } from "./domain/productTemplates";
 import { routeCommand, type RouteResult } from "./domain/router";
@@ -36,6 +37,7 @@ const localBrainStore = typeof window !== "undefined" ? createLocalBrainStore(wi
 const durableMemoryClient = createDurableMemoryClient();
 const llmClient = createLlmClient();
 const speech = createSpeechController();
+const transcription = createTranscriptionController();
 
 function durableToLocalMemoryEntry(entry: DurableMemoryEntry): LocalMemoryEntry {
   return {
@@ -87,6 +89,8 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
   const [voiceReplies, setVoiceReplies] = useState(speech.ttsSupported);
+  const [transcribeAvailable, setTranscribeAvailable] = useState(false);
+  const whisperRecordingRef = useRef(false);
   const [selectedProductType, setSelectedProductType] = useState(productTypes[0].id);
   const [builtProduct, setBuiltProduct] = useState<BuiltProduct | null>(null);
   const [isBuildingProduct, setIsBuildingProduct] = useState(false);
@@ -123,6 +127,9 @@ export default function App() {
     });
     llmClient.health().then((report) => {
       if (active) setAiBrain(report);
+    });
+    transcription.health().then((health) => {
+      if (active) setTranscribeAvailable(health.available);
     });
 
     return () => {
@@ -396,25 +403,51 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
+  function handleVoiceTranscript(transcript: string) {
+    const command = interpretVoiceCommand(transcript);
+    setCommand(command.text);
+    setVoiceStatus(`Heard (${command.action}): "${transcript}"`);
+    if (command.action === "mission") void runMissionFromCommand(command.text);
+    else if (command.action === "route") void routeAndCreate(command.text);
+  }
+
   function toggleListening() {
-    if (!speech.sttSupported) {
-      setVoiceStatus("Voice input is not supported in this browser (try Chrome/Edge).");
-      return;
-    }
     if (isListening) {
-      speech.stopListening();
+      if (whisperRecordingRef.current) transcription.stop();
+      else speech.stopListening();
       return;
     }
-    setVoiceStatus("Listening... say e.g. 'mission turn this lesson into a funnel'.");
+
+    // Prefer local, private Whisper when its server is running.
+    if (transcribeAvailable && transcription.supported) {
+      whisperRecordingRef.current = true;
+      setIsListening(true);
+      setVoiceStatus("Recording… tap again to transcribe (Whisper, local).");
+      void transcription.start({
+        onResult: (transcript) => {
+          setIsListening(false);
+          whisperRecordingRef.current = false;
+          handleVoiceTranscript(transcript);
+        },
+        onError: (message) => {
+          setVoiceStatus(`Voice error: ${message}`);
+          setIsListening(false);
+          whisperRecordingRef.current = false;
+        },
+      });
+      return;
+    }
+
+    // Fallback: browser Web Speech API.
+    if (!speech.sttSupported) {
+      setVoiceStatus("Voice input unavailable: Whisper is offline and this browser has no speech API (try Chrome/Edge).");
+      return;
+    }
+    whisperRecordingRef.current = false;
+    setVoiceStatus("Listening… (browser) say e.g. 'mission turn this lesson into a funnel'.");
     setIsListening(true);
     speech.startListening({
-      onTranscript: (transcript) => {
-        const command = interpretVoiceCommand(transcript);
-        setCommand(command.text);
-        setVoiceStatus(`Heard (${command.action}): "${transcript}"`);
-        if (command.action === "mission") void runMissionFromCommand(command.text);
-        else if (command.action === "route") void routeAndCreate(command.text);
-      },
+      onTranscript: handleVoiceTranscript,
       onEnd: () => setIsListening(false),
       onError: (message) => {
         setVoiceStatus(`Voice error: ${message}`);
@@ -474,7 +507,9 @@ export default function App() {
               className={isListening ? "voice-button listening" : "voice-button"}
               onClick={toggleListening}
             >
-              {isListening ? "🎤 Listening… (tap to stop)" : "🎤 Speak a command"}
+              {isListening
+                ? "🎤 Listening… (tap to stop)"
+                : `🎤 Speak a command (${transcribeAvailable ? "Whisper" : "browser"})`}
             </button>
             <label className="voice-toggle">
               <input

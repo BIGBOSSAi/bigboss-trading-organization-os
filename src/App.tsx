@@ -170,6 +170,27 @@ export default function App() {
     };
   }, []);
 
+  // Auto-retry: re-check service health so the dashboard self-heals when Nexus,
+  // the AI brain, or Whisper come online after the cockpit loaded.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      nexusClient
+        .health()
+        .then((status) => {
+          setNexus(status);
+          setSocialAccountId((current) => {
+            if (current) return current;
+            const telegram = status.accounts.find((account) => account.platform === "telegram") ?? status.accounts[0];
+            return telegram?.id ?? "";
+          });
+        })
+        .catch(() => {});
+      llmClient.health().then(setAiBrain).catch(() => {});
+      transcription.health().then((health) => setTranscribeAvailable(health.available)).catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   const { activeTask, activeOutput } = resolveTaskSelection(tasks, outputs, selectedTaskId);
   const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
   const ollamaGuidance = getOllamaGuidance(modelDiscovery);
@@ -641,6 +662,69 @@ export default function App() {
         </section>
       </section>
 
+      <section className="workspace-grid">
+        <section className="panel local-brain-panel">
+          <p className="panel-label">Local Brain Test</p>
+          <div className="workspace-heading">
+            <div>
+              <h2>{modelDiscovery?.status === "healthy" ? "Ollama Ready" : "Ollama Offline"}</h2>
+              <p>{modelDiscovery?.detail ?? "Checking local model runtime..."}</p>
+            </div>
+            <button type="button" onClick={refreshLocalModels}>
+              Refresh Models
+            </button>
+          </div>
+          <div className="brain-test-grid">
+            <label>
+              Model
+              <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+                {modelDiscovery?.models.length ? (
+                  modelDiscovery.models.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No local model found</option>
+                )}
+              </select>
+            </label>
+            <label>
+              Test prompt
+              <textarea value={brainPrompt} onChange={(event) => setBrainPrompt(event.target.value)} rows={4} />
+            </label>
+            <button type="button" onClick={testLocalBrain} disabled={!selectedModel || !brainPrompt.trim() || isTestingBrain}>
+              {isTestingBrain ? "Thinking..." : "Ask Local Brain"}
+            </button>
+          </div>
+          {brainResponse ? <pre className="brain-response">{brainResponse}</pre> : null}
+          <div className="guidance-panel">
+            <div>
+              <h3>{ollamaGuidance.title}</h3>
+              <p>{ollamaGuidance.summary}</p>
+            </div>
+            {ollamaGuidance.commands.length ? (
+              <div className="command-snippets">
+                {ollamaGuidance.commands.map((commandText) => (
+                  <div className="command-snippet-row" key={commandText}>
+                    <code>{commandText}</code>
+                    <button type="button" onClick={() => copyRepairCommand(commandText)}>
+                      Copy
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <ul>
+              {ollamaGuidance.nextActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+            {commandCopyStatus ? <p className="export-status">{commandCopyStatus}</p> : null}
+          </div>
+        </section>
+      </section>
+
       <section className="bridge-grid">
         <section className="panel">
           <p className="panel-label">HermesBridge Providers</p>
@@ -1032,69 +1116,6 @@ export default function App() {
           ) : (
             <p>Route a command to generate the first structured agent draft.</p>
           )}
-        </section>
-      </section>
-
-      <section className="workspace-grid">
-        <section className="panel local-brain-panel">
-          <p className="panel-label">Local Brain Test</p>
-          <div className="workspace-heading">
-            <div>
-              <h2>{modelDiscovery?.status === "healthy" ? "Ollama Ready" : "Ollama Offline"}</h2>
-              <p>{modelDiscovery?.detail ?? "Checking local model runtime..."}</p>
-            </div>
-            <button type="button" onClick={refreshLocalModels}>
-              Refresh Models
-            </button>
-          </div>
-          <div className="brain-test-grid">
-            <label>
-              Model
-              <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
-                {modelDiscovery?.models.length ? (
-                  modelDiscovery.models.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No local model found</option>
-                )}
-              </select>
-            </label>
-            <label>
-              Test prompt
-              <textarea value={brainPrompt} onChange={(event) => setBrainPrompt(event.target.value)} rows={4} />
-            </label>
-            <button type="button" onClick={testLocalBrain} disabled={!selectedModel || !brainPrompt.trim() || isTestingBrain}>
-              {isTestingBrain ? "Thinking..." : "Ask Local Brain"}
-            </button>
-          </div>
-          {brainResponse ? <pre className="brain-response">{brainResponse}</pre> : null}
-          <div className="guidance-panel">
-            <div>
-              <h3>{ollamaGuidance.title}</h3>
-              <p>{ollamaGuidance.summary}</p>
-            </div>
-            {ollamaGuidance.commands.length ? (
-              <div className="command-snippets">
-                {ollamaGuidance.commands.map((commandText) => (
-                  <div className="command-snippet-row" key={commandText}>
-                    <code>{commandText}</code>
-                    <button type="button" onClick={() => copyRepairCommand(commandText)}>
-                      Copy
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <ul>
-              {ollamaGuidance.nextActions.map((action) => (
-                <li key={action}>{action}</li>
-              ))}
-            </ul>
-            {commandCopyStatus ? <p className="export-status">{commandCopyStatus}</p> : null}
-          </div>
         </section>
       </section>
 

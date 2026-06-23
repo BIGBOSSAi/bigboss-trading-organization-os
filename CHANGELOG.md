@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-22
+
+- Bridged the cockpit to the standalone Nexus Social app so agents can ship content for lead-gen: `src/server/nexusClient.ts` (logs into Nexus, caches JWT, draft/publish/accounts) + `src/server/nexusApi.ts` (Vite `/api/nexus/{health,draft,publish}` proxy, credentials stay server-side) + browser `src/domain/nexusClient.ts`. New cockpit "Social Publishing" panel: pick a connected account, pull the latest agent output, "Draft to Nexus", then "Approve & Publish" (human approval gate). Verified end-to-end through the cockpit: draft → publish → live Telegram post in @big_bosszgh. 97 tests passing, build clean.
+
 ## 2026-06-21
 
 - Integrated local Whisper transcription (faster-whisper) for private, on-device, multilingual voice. A persistent model server (`.whisper/server.py`, loads `base` once on CPU/int8) is proxied via `src/server/transcribeApi.ts` (`/api/transcribe` + `/api/transcribe/health`); the browser `src/domain/transcriptionClient.ts` records mic audio (MediaRecorder) and posts it. The cockpit mic now prefers Whisper and falls back to the browser Web Speech API when the server is offline. One-click launcher starts the Whisper server too. Verified server path end-to-end (SAPI-generated sample → exact transcript, ~5.5s warm on this CPU); 92 tests passing, build clean.

@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { memoryApiPlugin } from "./src/server/memoryApi";
 import { llmApiPlugin } from "./src/server/llmApi";
 import { transcribeApiPlugin } from "./src/server/transcribeApi";
+import { nexusApiPlugin } from "./src/server/nexusApi";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -20,6 +21,11 @@ export default defineConfig(({ mode }) => {
         ollamaModel: env.OLLAMA_MODEL,
       }),
       transcribeApiPlugin({ whisperUrl: env.WHISPER_URL }),
+      nexusApiPlugin({
+        baseUrl: env.NEXUS_URL,
+        email: env.NEXUS_EMAIL,
+        password: env.NEXUS_PASSWORD,
+      }),
     ],
     test: {
       environment: "node",

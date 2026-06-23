@@ -48,6 +48,7 @@
 
 - [x] Product templates: one-click Product Builder (Launch agent) scaffolds 7 product types via the AI brain (deterministic fallback) and saves each asset to the vault.
 - [x] Local Whisper voice (faster-whisper): private on-device speech-to-text via a persistent model server, proxied through `/api/transcribe`; cockpit mic prefers Whisper and falls back to the browser Web Speech API.
+- [x] BIGBoss → Nexus social bridge: cockpit drafts agent content, you approve, and it publishes to connected channels (live Telegram). Server-side `/api/nexus/{health,draft,publish}` proxy keeps Nexus creds off the browser.
 
 ## Next
 - [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).

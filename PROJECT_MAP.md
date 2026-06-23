@@ -34,6 +34,8 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `src/domain/voice.ts`: Web Speech API wrapper for voice commands (STT) and read-back (TTS), with pure command-interpretation helpers.
 - `src/domain/transcriptionClient.ts`: browser MediaRecorder client for local Whisper transcription (with health check + fallback).
 - `src/server/transcribeApi.ts`: Vite middleware proxying `/api/transcribe` to the local Whisper server.
+- `src/server/nexusClient.ts` + `src/server/nexusApi.ts`: bridge to the Nexus Social app (`/api/nexus/{health,draft,publish}`), credentials server-side.
+- `src/domain/nexusClient.ts`: browser client for the Nexus bridge (draft → approve → publish).
 - `.whisper/server.py`: persistent faster-whisper model server (loads once, serves :8378); `.whisper/transcribe.py`: one-shot CLI.
 - `src/domain/productTemplates.ts`: registry of product types + deterministic scaffold + prompt builder.
 - `src/domain/productBuilder.ts`: AI-brain-filled product scaffold with deterministic fallback.

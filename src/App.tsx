@@ -22,6 +22,7 @@ import { createSpeechController, interpretVoiceCommand, stripMarkdownForSpeech }
 import { createTranscriptionController } from "./domain/transcriptionClient";
 import { buildProduct } from "./domain/productBuilder";
 import { productTypes, type BuiltProduct } from "./domain/productTemplates";
+import { createNexusClient, type NexusStatus } from "./domain/nexusClient";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -38,6 +39,7 @@ const durableMemoryClient = createDurableMemoryClient();
 const llmClient = createLlmClient();
 const speech = createSpeechController();
 const transcription = createTranscriptionController();
+const nexusClient = createNexusClient();
 
 function durableToLocalMemoryEntry(entry: DurableMemoryEntry): LocalMemoryEntry {
   return {
@@ -94,6 +96,13 @@ export default function App() {
   const [selectedProductType, setSelectedProductType] = useState(productTypes[0].id);
   const [builtProduct, setBuiltProduct] = useState<BuiltProduct | null>(null);
   const [isBuildingProduct, setIsBuildingProduct] = useState(false);
+  const [nexus, setNexus] = useState<NexusStatus | null>(null);
+  const [socialAccountId, setSocialAccountId] = useState("");
+  const [socialDraft, setSocialDraft] = useState("");
+  const [nexusPostId, setNexusPostId] = useState<string | null>(null);
+  const [socialStatus, setSocialStatus] = useState("");
+  const [isDraftingSocial, setIsDraftingSocial] = useState(false);
+  const [isPublishingSocial, setIsPublishingSocial] = useState(false);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -130,6 +139,12 @@ export default function App() {
     });
     transcription.health().then((health) => {
       if (active) setTranscribeAvailable(health.available);
+    });
+    nexusClient.health().then((status) => {
+      if (!active) return;
+      setNexus(status);
+      const telegram = status.accounts.find((account) => account.platform === "telegram") ?? status.accounts[0];
+      if (telegram) setSocialAccountId(telegram.id);
     });
 
     return () => {
@@ -409,6 +424,50 @@ export default function App() {
     setVoiceStatus(`Heard (${command.action}): "${transcript}"`);
     if (command.action === "mission") void runMissionFromCommand(command.text);
     else if (command.action === "route") void routeAndCreate(command.text);
+  }
+
+  function useLatestAgentOutput() {
+    const text =
+      builtProduct?.markdown ||
+      mission?.finalResult ||
+      (activeOutput ? formatAgentOutputAsMarkdown(activeOutput) : "");
+    if (text.trim()) {
+      setSocialDraft(text);
+      setSocialStatus("Loaded latest agent output — edit if needed, then draft.");
+    } else {
+      setSocialStatus("No agent output yet — run a command, mission, or product first.");
+    }
+  }
+
+  async function draftToSocial() {
+    if (!socialDraft.trim() || !socialAccountId || isDraftingSocial) return;
+    setIsDraftingSocial(true);
+    setSocialStatus("Creating draft in Nexus…");
+    try {
+      const { postId } = await nexusClient.draft(socialDraft, socialAccountId);
+      setNexusPostId(postId);
+      setSocialStatus("Draft created in Nexus. Review it, then Approve & Publish.");
+    } catch (error) {
+      setSocialStatus(`Draft failed: ${error instanceof Error ? error.message : "error"}`);
+    } finally {
+      setIsDraftingSocial(false);
+    }
+  }
+
+  async function approveAndPublish() {
+    if (!nexusPostId || isPublishingSocial) return;
+    setIsPublishingSocial(true);
+    setSocialStatus("Publishing (approved)…");
+    try {
+      const result = await nexusClient.publish(nexusPostId);
+      setSocialStatus(`Published: ${result.message}`);
+      setNexusPostId(null);
+      speakIfEnabled("Content approved and published to your channel.");
+    } catch (error) {
+      setSocialStatus(`Publish failed: ${error instanceof Error ? error.message : "error"}`);
+    } finally {
+      setIsPublishingSocial(false);
+    }
   }
 
   function toggleListening() {
@@ -711,6 +770,54 @@ export default function App() {
               </div>
             </div>
           ) : null}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel social-panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Social Publishing (BIGBoss → Nexus)</p>
+              <h2>{nexus?.available ? `Nexus connected · ${nexus.accounts.length} account(s)` : "Nexus offline"}</h2>
+              <p>{nexus?.detail || "Draft agent content, approve, and publish to your channels."}</p>
+            </div>
+            <div className="workspace-actions">
+              <select value={socialAccountId} onChange={(event) => setSocialAccountId(event.target.value)}>
+                {nexus?.accounts.length ? (
+                  nexus.accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.platform}: {account.username}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No connected accounts</option>
+                )}
+              </select>
+              <button type="button" onClick={useLatestAgentOutput}>
+                Use latest agent output
+              </button>
+            </div>
+          </div>
+          <textarea
+            aria-label="Social content"
+            value={socialDraft}
+            onChange={(event) => setSocialDraft(event.target.value)}
+            rows={6}
+            placeholder="Content to publish (draft from an agent or type your own)…"
+          />
+          <div className="workspace-actions">
+            <button
+              type="button"
+              onClick={draftToSocial}
+              disabled={!nexus?.available || !socialDraft.trim() || !socialAccountId || isDraftingSocial}
+            >
+              {isDraftingSocial ? "Drafting…" : "Draft to Nexus"}
+            </button>
+            <button type="button" onClick={approveAndPublish} disabled={!nexusPostId || isPublishingSocial}>
+              {isPublishingSocial ? "Publishing…" : "✅ Approve & Publish"}
+            </button>
+          </div>
+          {socialStatus ? <p className="export-status">{socialStatus}</p> : null}
         </section>
       </section>
 

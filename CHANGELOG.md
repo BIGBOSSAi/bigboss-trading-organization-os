@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-23
+
+- One-click launcher now also starts the Nexus app (:5000), so Ollama + FCC + Whisper + Nexus + cockpit all come up from a single double-click.
+- Added a Memory Vault Browser to the cockpit: lists every saved item (missions, products, scheduled drafts) from `/api/memory` with a viewer for the full content.
+- Added daily content automation (`src/domain/contentScheduler.ts` + `src/server/schedulerApi.ts`): a server-side scheduler generates a daily social-post draft via the AI brain and saves it to the vault as approval-pending (NOT auto-published); exposes `GET /api/scheduler` + `POST /api/scheduler/run`, with a cockpit "Automation — Daily Content" panel ("Run daily draft now"). Timer is unref'd for clean process exit. 100 tests passing; verified run-now generates a real FCC draft into the vault.
+
 ## 2026-06-22
 
 - Bridged the cockpit to the standalone Nexus Social app so agents can ship content for lead-gen: `src/server/nexusClient.ts` (logs into Nexus, caches JWT, draft/publish/accounts) + `src/server/nexusApi.ts` (Vite `/api/nexus/{health,draft,publish}` proxy, credentials stay server-side) + browser `src/domain/nexusClient.ts`. New cockpit "Social Publishing" panel: pick a connected account, pull the latest agent output, "Draft to Nexus", then "Approve & Publish" (human approval gate). Verified end-to-end through the cockpit: draft → publish → live Telegram post in @big_bosszgh. 97 tests passing, build clean.

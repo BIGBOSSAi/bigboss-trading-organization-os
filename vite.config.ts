@@ -4,6 +4,7 @@ import { memoryApiPlugin } from "./src/server/memoryApi";
 import { llmApiPlugin } from "./src/server/llmApi";
 import { transcribeApiPlugin } from "./src/server/transcribeApi";
 import { nexusApiPlugin } from "./src/server/nexusApi";
+import { schedulerApiPlugin } from "./src/server/schedulerApi";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -25,6 +26,16 @@ export default defineConfig(({ mode }) => {
         baseUrl: env.NEXUS_URL,
         email: env.NEXUS_EMAIL,
         password: env.NEXUS_PASSWORD,
+      }),
+      schedulerApiPlugin({
+        memoryRoot,
+        hourLocal: env.SCHEDULER_HOUR ? Number(env.SCHEDULER_HOUR) : 9,
+        enabled: env.SCHEDULER_ENABLED !== "false",
+        fccBaseUrl: env.FCC_BASE_URL,
+        fccModel: env.FCC_MODEL,
+        fccApiKey: env.FCC_API_KEY,
+        ollamaBaseUrl: env.OLLAMA_BASE_URL,
+        ollamaModel: env.OLLAMA_MODEL,
       }),
     ],
     test: {

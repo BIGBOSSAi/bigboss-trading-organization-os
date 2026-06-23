@@ -103,6 +103,17 @@ export default function App() {
   const [socialStatus, setSocialStatus] = useState("");
   const [isDraftingSocial, setIsDraftingSocial] = useState(false);
   const [isPublishingSocial, setIsPublishingSocial] = useState(false);
+  const [vaultEntries, setVaultEntries] = useState<DurableMemoryEntry[]>([]);
+  const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
+  const [isLoadingVault, setIsLoadingVault] = useState(false);
+  const [scheduler, setScheduler] = useState<{
+    enabled?: boolean;
+    hourLocal?: number;
+    lastTitle?: string | null;
+    nextRunAt?: string | null;
+    recent?: Array<{ id: string; title: string; createdAt: string }>;
+  } | null>(null);
+  const [isRunningSchedule, setIsRunningSchedule] = useState(false);
   const [providerReport, setProviderReport] = useState<ProviderStatusReport | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
@@ -130,6 +141,7 @@ export default function App() {
     durableMemoryClient.load().then((result) => {
       if (!active) return;
       setDurableMemory(result.status);
+      setVaultEntries(result.entries);
       if (result.entries.length > 0) {
         setMemoryEntries((current) => mergeMemoryEntries(result.entries, current));
       }
@@ -146,6 +158,12 @@ export default function App() {
       const telegram = status.accounts.find((account) => account.platform === "telegram") ?? status.accounts[0];
       if (telegram) setSocialAccountId(telegram.id);
     });
+    fetch("/api/scheduler")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((status) => {
+        if (active && status) setScheduler(status);
+      })
+      .catch(() => {});
 
     return () => {
       active = false;
@@ -155,6 +173,7 @@ export default function App() {
   const { activeTask, activeOutput } = resolveTaskSelection(tasks, outputs, selectedTaskId);
   const activeRoute = activeTask?.route ?? routes[0] ?? routeCommand(command);
   const ollamaGuidance = getOllamaGuidance(modelDiscovery);
+  const selectedVaultEntry = vaultEntries.find((entry) => entry.id === selectedVaultId) ?? null;
   const openTasks = useMemo(
     () =>
       activeRoute.nextActions.map((action, index) => ({
@@ -467,6 +486,32 @@ export default function App() {
       setSocialStatus(`Publish failed: ${error instanceof Error ? error.message : "error"}`);
     } finally {
       setIsPublishingSocial(false);
+    }
+  }
+
+  async function runScheduledNow() {
+    if (isRunningSchedule) return;
+    setIsRunningSchedule(true);
+    try {
+      const response = await fetch("/api/scheduler/run", { method: "POST" });
+      if (response.ok) {
+        setScheduler(await response.json());
+        await loadVault();
+        speakIfEnabled("Daily content draft generated and saved to the vault.");
+      }
+    } finally {
+      setIsRunningSchedule(false);
+    }
+  }
+
+  async function loadVault() {
+    setIsLoadingVault(true);
+    try {
+      const result = await durableMemoryClient.load();
+      setVaultEntries(result.entries);
+      setDurableMemory(result.status);
+    } finally {
+      setIsLoadingVault(false);
     }
   }
 
@@ -818,6 +863,84 @@ export default function App() {
             </button>
           </div>
           {socialStatus ? <p className="export-status">{socialStatus}</p> : null}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Automation — Daily Content</p>
+              <h2>{scheduler?.lastTitle ? scheduler.lastTitle : "No draft yet"}</h2>
+              <p>
+                {scheduler?.enabled
+                  ? `Auto-drafts daily at ${String(scheduler.hourLocal ?? 9).padStart(2, "0")}:00${
+                      scheduler.nextRunAt ? ` · next ${new Date(scheduler.nextRunAt).toLocaleString()}` : ""
+                    }`
+                  : "Scheduler is disabled."}
+              </p>
+            </div>
+            <button type="button" onClick={runScheduledNow} disabled={isRunningSchedule}>
+              {isRunningSchedule ? "Generating…" : "Run daily draft now"}
+            </button>
+          </div>
+          {scheduler?.recent?.length ? (
+            <ul className="task-list">
+              {scheduler.recent.slice(0, 5).map((item) => (
+                <li key={item.id}>
+                  <strong>{new Date(item.createdAt).toLocaleDateString()}</strong> {item.title}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="export-status">
+              Drafts save to the vault as approval-pending — review them in the Vault Browser, then publish via Social.
+            </p>
+          )}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel vault-panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Memory Vault Browser</p>
+              <h2>{vaultEntries.length} saved item(s)</h2>
+              <p>
+                {durableMemory?.available
+                  ? `Durable on disk: ${durableMemory.root ?? "vault"}`
+                  : "Browser-only — start the dev server for the durable vault."}
+              </p>
+            </div>
+            <button type="button" onClick={loadVault} disabled={isLoadingVault}>
+              {isLoadingVault ? "Loading…" : "Refresh"}
+            </button>
+          </div>
+          <div className="vault-grid">
+            <ul className="vault-index">
+              {vaultEntries.map((entry) => (
+                <li key={entry.id} className={entry.id === selectedVaultId ? "selected-task" : undefined}>
+                  <button type="button" className="task-select-button" onClick={() => setSelectedVaultId(entry.id)}>
+                    <span>
+                      <strong>{entry.folderId}</strong> {entry.title}
+                    </span>
+                    <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
+                  </button>
+                </li>
+              ))}
+              {vaultEntries.length === 0 ? <li>No saved items yet — run a mission or build a product.</li> : null}
+            </ul>
+            <div className="vault-viewer">
+              {selectedVaultEntry ? (
+                <>
+                  <h3>{selectedVaultEntry.title}</h3>
+                  <pre className="product-markdown">{selectedVaultEntry.summary}</pre>
+                </>
+              ) : (
+                <p>Select an item to view its full content.</p>
+              )}
+            </div>
+          </div>
         </section>
       </section>
 

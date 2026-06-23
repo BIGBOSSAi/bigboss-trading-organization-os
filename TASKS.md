@@ -49,6 +49,9 @@
 - [x] Product templates: one-click Product Builder (Launch agent) scaffolds 7 product types via the AI brain (deterministic fallback) and saves each asset to the vault.
 - [x] Local Whisper voice (faster-whisper): private on-device speech-to-text via a persistent model server, proxied through `/api/transcribe`; cockpit mic prefers Whisper and falls back to the browser Web Speech API.
 - [x] BIGBoss → Nexus social bridge: cockpit drafts agent content, you approve, and it publishes to connected channels (live Telegram). Server-side `/api/nexus/{health,draft,publish}` proxy keeps Nexus creds off the browser.
+- [x] One-click launcher now also starts the Nexus app (true single-launch: Ollama + FCC + Whisper + Nexus + cockpit).
+- [x] Vault/mission browser in the cockpit: browse and view all saved memory (missions, products, drafts) from the vault.
+- [x] Scheduled automation: daily AI content draft generated on a cadence, saved to the vault as approval-pending (review in Vault Browser, publish via Social); manual "run now" too.
 
 ## Next
 - [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).

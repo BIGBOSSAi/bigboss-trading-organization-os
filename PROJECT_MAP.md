@@ -36,6 +36,8 @@ Build BIGBoss Trading Organization OS: an AI brain for running a trading educati
 - `src/server/transcribeApi.ts`: Vite middleware proxying `/api/transcribe` to the local Whisper server.
 - `src/server/nexusClient.ts` + `src/server/nexusApi.ts`: bridge to the Nexus Social app (`/api/nexus/{health,draft,publish}`), credentials server-side.
 - `src/domain/nexusClient.ts`: browser client for the Nexus bridge (draft → approve → publish).
+- `src/domain/contentScheduler.ts`: pure helpers for daily content automation (topic rotation, prompt, next-run timing).
+- `src/server/schedulerApi.ts`: server-side daily content-draft scheduler (`/api/scheduler` + `/api/scheduler/run`), saves approval-pending drafts to the vault.
 - `.whisper/server.py`: persistent faster-whisper model server (loads once, serves :8378); `.whisper/transcribe.py`: one-shot CLI.
 - `src/domain/productTemplates.ts`: registry of product types + deterministic scaffold + prompt builder.
 - `src/domain/productBuilder.ts`: AI-brain-filled product scaffold with deterministic fallback.

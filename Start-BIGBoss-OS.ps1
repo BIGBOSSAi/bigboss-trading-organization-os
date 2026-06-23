@@ -84,6 +84,22 @@ if (Test-Port -Port 8378) {
     Write-Host "[skip] Whisper not installed (.whisper/.venv missing); voice will use the browser API." -ForegroundColor DarkYellow
 }
 
+# 2c) Nexus Social app (standalone, :5000) - publishing backend for lead-gen
+$nexusDir = "C:\Users\Sugar\Documents\Codex\2026-06-06\i-have-installed-olama-on-my"
+if (Test-Port -Port 5000) {
+    Write-Host "[ok]   Nexus app already running on 5000." -ForegroundColor Green
+} elseif (Test-Path (Join-Path $nexusDir "server\index.js")) {
+    Write-Host "[start] Nexus Social app (node server/index.js)..." -ForegroundColor Cyan
+    Start-Process -FilePath "node" -ArgumentList "server/index.js" -WorkingDirectory $nexusDir -WindowStyle Minimized
+    if (Wait-Port -Port 5000 -TimeoutSec 25) {
+        Write-Host "[ok]   Nexus app is up on 5000." -ForegroundColor Green
+    } else {
+        Write-Host "[warn] Nexus did not report ready in time; check its window." -ForegroundColor DarkYellow
+    }
+} else {
+    Write-Host "[skip] Nexus app not found at $nexusDir." -ForegroundColor DarkYellow
+}
+
 # 3) Cockpit (Vite dev server)
 if (Test-Port -Port 5173) {
     Write-Host "[ok]   Cockpit already running on 5173." -ForegroundColor Green

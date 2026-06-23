@@ -645,15 +645,25 @@ export default function App() {
         <section className="panel">
           <p className="panel-label">HermesBridge Providers</p>
           <div className="provider-list">
-            {(providerReport?.providers ?? []).map((provider) => (
-              <article className="provider-row" key={provider.id}>
-                <div>
-                  <h3>{provider.label}</h3>
-                  <p>{provider.detail}</p>
-                </div>
-                <span className={`provider-status status-${provider.status}`}>{provider.status}</span>
-              </article>
-            ))}
+            {(providerReport?.providers ?? []).map((provider) => {
+              // Override the legacy static FCC/Ollama labels with real gateway health.
+              const realStatus =
+                provider.id === "fcc-backup"
+                  ? aiBrain?.providers.find((entry) => entry.id === "fcc")?.status
+                  : provider.id === "ollama-local"
+                    ? aiBrain?.providers.find((entry) => entry.id === "ollama")?.status
+                    : undefined;
+              const status = realStatus ?? provider.status;
+              return (
+                <article className="provider-row" key={provider.id}>
+                  <div>
+                    <h3>{provider.label}</h3>
+                    <p>{provider.detail}</p>
+                  </div>
+                  <span className={`provider-status status-${status}`}>{status}</span>
+                </article>
+              );
+            })}
             {!providerReport ? <p>Checking Ollama, backup routes, and local candidates...</p> : null}
           </div>
         </section>

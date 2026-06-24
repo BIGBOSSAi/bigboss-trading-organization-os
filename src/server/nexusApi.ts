@@ -33,6 +33,20 @@ export function nexusApiPlugin(options: NexusClientOptions = {}): Plugin {
       return;
     }
 
+    if (path === "/api/nexus/request-approval" && req.method === "POST") {
+      readBody(req)
+        .then((body) => {
+          const { postId } = body as { postId?: string };
+          if (!postId) {
+            sendJson(res, 400, { error: "postId is required." });
+            return;
+          }
+          return client.requestApproval(postId).then((ok) => sendJson(res, ok ? 200 : 502, { ok }));
+        })
+        .catch((error) => sendJson(res, 502, { error: messageOf(error) }));
+      return;
+    }
+
     if (path === "/api/nexus/publish" && req.method === "POST") {
       readBody(req)
         .then((body) => {

@@ -19,6 +19,7 @@ export interface NexusClient {
   health: () => Promise<NexusStatus>;
   draft: (content: string, accountId: string) => Promise<{ postId: string }>;
   publish: (postId: string) => Promise<{ ok: boolean; message: string }>;
+  requestApproval: (postId: string) => Promise<boolean>;
 }
 
 export function createNexusClient(fetchImpl: typeof fetch = fetch): NexusClient {
@@ -62,6 +63,19 @@ export function createNexusClient(fetchImpl: typeof fetch = fetch): NexusClient 
         throw new Error(payload.error || payload.message || "Publish failed.");
       }
       return { ok: Boolean(payload.success), message: payload.message || "Published." };
+    },
+
+    async requestApproval(postId: string): Promise<boolean> {
+      try {
+        const response = await fetchImpl("/api/nexus/request-approval", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId }),
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
     },
   };
 }

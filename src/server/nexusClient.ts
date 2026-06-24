@@ -26,6 +26,7 @@ export interface NexusClient {
   health: () => Promise<NexusHealth>;
   draftPost: (content: string, accountId: string) => Promise<{ postId: string }>;
   publishPost: (postId: string) => Promise<unknown>;
+  requestApproval: (postId: string) => Promise<boolean>;
 }
 
 export function createNexusClient(options: NexusClientOptions = {}): NexusClient {
@@ -106,6 +107,11 @@ export function createNexusClient(options: NexusClientOptions = {}): NexusClient
         throw new Error((payload as { message?: string }).message || `Nexus publish failed (HTTP ${response.status}).`);
       }
       return payload;
+    },
+
+    async requestApproval(postId: string): Promise<boolean> {
+      const response = await authed(`/api/posts/${postId}/request-approval`, { method: "POST" });
+      return response.ok;
     },
   };
 }

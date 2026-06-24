@@ -494,7 +494,12 @@ export default function App() {
     try {
       const { postId } = await nexusClient.draft(socialDraft, socialAccountId);
       setNexusPostId(postId);
-      setSocialStatus("Draft created in Nexus. Review it, then Approve & Publish.");
+      const sent = await nexusClient.requestApproval(postId);
+      setSocialStatus(
+        sent
+          ? "Sent to your private Telegram DM — tap ✅ Approve there to publish to the channel (or use the button below)."
+          : "Draft created. Approve & Publish below (Telegram DM approval unavailable).",
+      );
     } catch (error) {
       setSocialStatus(`Draft failed: ${error instanceof Error ? error.message : "error"}`);
     } finally {
@@ -971,7 +976,7 @@ export default function App() {
               onClick={draftToSocial}
               disabled={!nexus?.available || !socialDraft.trim() || !socialAccountId || isDraftingSocial}
             >
-              {isDraftingSocial ? "Drafting…" : "Draft to Nexus"}
+              {isDraftingSocial ? "Sending…" : "Send to my DM for approval"}
             </button>
             <button type="button" onClick={approveAndPublish} disabled={!nexusPostId || isPublishingSocial}>
               {isPublishingSocial ? "Publishing…" : "✅ Approve & Publish"}

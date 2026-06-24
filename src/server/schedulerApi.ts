@@ -85,6 +85,19 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
     }
   }
 
+  // Stage a Nexus draft and send the private Approve/Reject buttons for it.
+  async function requestApproval(text: string): Promise<boolean> {
+    try {
+      const health = await nexus.health();
+      const account = health.accounts.find((entry) => entry.platform === "telegram") ?? health.accounts[0];
+      if (!account) return false;
+      const { postId } = await nexus.draftPost(text, account.id);
+      return await nexus.requestApproval(postId);
+    } catch {
+      return false;
+    }
+  }
+
   async function runOnce(trigger: string): Promise<void> {
     if (state.running) return;
     state.running = true;
@@ -127,8 +140,12 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
             : `⚠️ Daily draft saved but auto-publish failed — approve it in the dashboard:\n\n${title}`,
         );
       } else {
-        outcome = "pending-approval";
-        await notify(`📋 Approval pending — review this draft:\n\n${title}\n\n${text}\n\nApprove in the BIGBoss dashboard, or say "approve".`);
+        // Send a private DM with inline Approve/Reject buttons (one tap publishes).
+        const requested = await requestApproval(text);
+        outcome = requested ? "pending-approval (buttons sent)" : "pending-approval (saved to vault)";
+        if (!requested) {
+          await notify(`📋 Daily draft saved to the vault (no channel connected for buttons):\n\n${title}`);
+        }
       }
 
       state.lastRunAt = createdAt;

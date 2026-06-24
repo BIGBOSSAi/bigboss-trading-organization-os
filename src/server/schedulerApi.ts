@@ -128,7 +128,7 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
         );
       } else {
         outcome = "pending-approval";
-        await notify(`📋 Approval pending — a new daily draft is waiting:\n\n${title}\n\nOpen the BIGBoss dashboard to approve & publish.`);
+        await notify(`📋 Approval pending — review this draft:\n\n${title}\n\n${text}\n\nApprove in the BIGBoss dashboard, or say "approve".`);
       }
 
       state.lastRunAt = createdAt;

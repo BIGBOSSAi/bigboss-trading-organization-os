@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
       schedulerApiPlugin({
         memoryRoot,
         hourLocal: env.SCHEDULER_HOUR ? Number(env.SCHEDULER_HOUR) : 9,
+        times: env.SCHEDULER_TIMES,
         enabled: env.SCHEDULER_ENABLED !== "false",
         autoApprove: env.SCHEDULER_AUTO_APPROVE === "true",
         telegramToken: env.TELEGRAM_BOT_TOKEN,

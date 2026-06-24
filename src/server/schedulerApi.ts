@@ -8,11 +8,12 @@ import type { Connect, Plugin } from "vite";
 import { createLlmGateway, type LlmGatewayOptions } from "./llmGateway";
 import { createMemoryStore } from "./memoryStore";
 import { createNexusClient } from "./nexusClient";
-import { buildDailyContentPrompt, msUntilNextRun, pickDailyTopic } from "../domain/contentScheduler";
+import { buildDailyContentPrompt, msUntilNextTime, parseTimes, pickDailyTopic } from "../domain/contentScheduler";
 
 export interface SchedulerOptions extends LlmGatewayOptions {
   memoryRoot: string;
   hourLocal?: number;
+  times?: string;
   enabled?: boolean;
   autoApprove?: boolean;
   telegramToken?: string;
@@ -24,10 +25,11 @@ export interface SchedulerOptions extends LlmGatewayOptions {
 
 interface SchedulerState {
   enabled: boolean;
-  hourLocal: number;
+  times: string[];
   autoApprove: boolean;
   running: boolean;
   lastRunAt: string | null;
+  lastRunDay: string | null;
   lastTitle: string | null;
   lastOutcome: string | null;
   nextRunAt: string | null;
@@ -43,16 +45,18 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
     password: options.nexusPassword,
   });
   const hourLocal = options.hourLocal ?? 9;
+  const times = parseTimes(options.times || `${String(hourLocal).padStart(2, "0")}:00`);
   const enabled = options.enabled ?? true;
   const telegramToken = options.telegramToken ?? "";
   const telegramChat = options.telegramChat ?? "";
 
   const state: SchedulerState = {
     enabled,
-    hourLocal,
+    times: times.map((t) => `${String(t.h).padStart(2, "0")}:${String(t.m).padStart(2, "0")}`),
     autoApprove: options.autoApprove ?? false,
     running: false,
     lastRunAt: null,
+    lastRunDay: null,
     lastTitle: null,
     lastOutcome: null,
     nextRunAt: null,
@@ -149,6 +153,7 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
       }
 
       state.lastRunAt = createdAt;
+      state.lastRunDay = now.toDateString();
       state.lastTitle = title;
       state.lastOutcome = outcome;
       state.recent = [{ id, title, createdAt, outcome }, ...state.recent].slice(0, 10);
@@ -158,10 +163,12 @@ export function schedulerApiPlugin(options: SchedulerOptions): Plugin {
   }
 
   function scheduleNext(): void {
-    const delay = msUntilNextRun(new Date(), hourLocal);
+    const delay = msUntilNextTime(new Date(), times);
     state.nextRunAt = new Date(Date.now() + delay).toISOString();
     const timer: ReturnType<typeof setTimeout> = setTimeout(async () => {
-      await runOnce("scheduled");
+      // Once per day: a later time (e.g. 13:30) only fires if an earlier one (09:00) was missed.
+      const today = new Date().toDateString();
+      if (state.lastRunDay !== today) await runOnce("scheduled");
       scheduleNext();
     }, delay);
     (timer as unknown as { unref?: () => void }).unref?.();

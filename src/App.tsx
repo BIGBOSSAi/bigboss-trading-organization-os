@@ -108,7 +108,7 @@ export default function App() {
   const [isLoadingVault, setIsLoadingVault] = useState(false);
   const [scheduler, setScheduler] = useState<{
     enabled?: boolean;
-    hourLocal?: number;
+    times?: string[];
     autoApprove?: boolean;
     lastTitle?: string | null;
     nextRunAt?: string | null;
@@ -994,7 +994,7 @@ export default function App() {
               <h2>{scheduler?.lastTitle ? scheduler.lastTitle : "No draft yet"}</h2>
               <p>
                 {scheduler?.enabled
-                  ? `Auto-drafts daily at ${String(scheduler.hourLocal ?? 9).padStart(2, "0")}:00${
+                  ? `Auto-drafts daily at ${(scheduler.times ?? ["09:00"]).join(" / ")} (later time is a catch-up)${
                       scheduler.nextRunAt ? ` · next ${new Date(scheduler.nextRunAt).toLocaleString()}` : ""
                     }`
                   : "Scheduler is disabled."}

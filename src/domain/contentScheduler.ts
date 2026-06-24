@@ -33,3 +33,30 @@ export function msUntilNextRun(now: Date, hourLocal: number): number {
   if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
   return next.getTime() - now.getTime();
 }
+
+// Parse "09:00,13:30" -> [{h:9,m:0},{h:13,m:30}].
+export function parseTimes(spec: string): Array<{ h: number; m: number }> {
+  return spec
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      const [h, m] = s.split(":").map((n) => parseInt(n, 10) || 0);
+      return { h, m };
+    });
+}
+
+// Milliseconds until the soonest upcoming time in the list (today if ahead, else next day).
+export function msUntilNextTime(now: Date, times: Array<{ h: number; m: number }>): number {
+  const day = 24 * 60 * 60 * 1000;
+  if (!times.length) return day;
+  let best = Infinity;
+  for (const t of times) {
+    const cand = new Date(now);
+    cand.setHours(t.h, t.m, 0, 0);
+    let diff = cand.getTime() - now.getTime();
+    if (diff <= 0) diff += day;
+    best = Math.min(best, diff);
+  }
+  return best;
+}

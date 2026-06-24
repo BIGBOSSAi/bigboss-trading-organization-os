@@ -4,16 +4,22 @@
 // browser-only and degrades to no-ops when the APIs are unavailable.
 
 export interface VoiceCommand {
-  action: "mission" | "route" | "fill";
+  action: "mission" | "route" | "approve" | "fill";
   text: string;
 }
 
 const missionTriggers = ["run mission", "start mission", "mission", "whole team", "all agents"];
 const routeTriggers = ["route command", "route", "ask", "single agent"];
+const approveTriggers = ["approve and publish", "approve", "approved", "publish it", "publish this", "ship it", "send it"];
 
 export function interpretVoiceCommand(transcript: string): VoiceCommand {
   const text = transcript.trim();
   const lower = text.toLowerCase();
+
+  // "approve" is a standalone action — no payload text needed.
+  if (approveTriggers.some((trigger) => lower === trigger || lower.startsWith(`${trigger} `) || lower.startsWith(`${trigger}.`))) {
+    return { action: "approve", text: "" };
+  }
 
   for (const trigger of missionTriggers) {
     if (lower.startsWith(trigger)) return { action: "mission", text: stripTrigger(text, trigger) };

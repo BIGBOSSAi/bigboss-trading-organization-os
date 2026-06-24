@@ -25,6 +25,12 @@ describe("interpretVoiceCommand", () => {
     expect(result.action).toBe("fill");
     expect(result.text).toBe("backtest this MT5 bot");
   });
+
+  it("detects the approve action for the 100% voice loop", () => {
+    expect(interpretVoiceCommand("approve").action).toBe("approve");
+    expect(interpretVoiceCommand("Approve and publish").action).toBe("approve");
+    expect(interpretVoiceCommand("publish it").action).toBe("approve");
+  });
 });
 
 describe("stripMarkdownForSpeech", () => {

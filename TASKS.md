@@ -52,8 +52,13 @@
 - [x] One-click launcher now also starts the Nexus app (true single-launch: Ollama + FCC + Whisper + Nexus + cockpit).
 - [x] Vault/mission browser in the cockpit: browse and view all saved memory (missions, products, drafts) from the vault.
 - [x] Scheduled automation: daily AI content draft generated on a cadence, saved to the vault as approval-pending (review in Vault Browser, publish via Social); manual "run now" too.
+- [x] 100% voice loop: "approve" voice command publishes the pending draft (alongside "mission"/"route").
+- [x] Telegram notifications: the scheduler messages you when a draft is pending approval (or when auto-published).
+- [x] Auto-approve toggle (dashboard): when ON, the daily draft auto-publishes via Nexus without manual approval; OFF leaves it pending + notifies.
 
 ## Next
+
+- [ ] Add X / Discord as live publishing platforms (currently Telegram only).
 - [ ] Social media content shipping for lead-gen (wire the Nexus Social dashboard / connectors so Voice can publish to get leads — approval-gated).
 - [ ] Configure direct FCC providers (Groq, Cerebras, Gemini, etc.): add key in Admin UI + Refresh models.
 - [ ] Surface durable memory / mission notes in the cockpit (browse + edit).

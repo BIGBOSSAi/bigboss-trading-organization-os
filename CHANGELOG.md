@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-24
+
+- Completed the voice + auto-approval loop. (1) Voice "approve" command (`src/domain/voice.ts`) publishes the pending social draft — the loop is now fully voice-drivable (mission/route/approve). (2) The scheduler (`src/server/schedulerApi.ts`) now sends Telegram notifications: "approval pending" when a daily draft is waiting, or "auto-published" when it ships. (3) Auto-approve toggle on the dashboard (`POST /api/scheduler/auto-approve`) — when enabled, the daily draft auto-publishes via the Nexus bridge with no manual step; when off it stays pending and notifies. Also fixed a real Nexus bug: `Post.content` maxlength was 280 (Twitter), silently rejecting ~600-char AI posts — raised to 5000. Verified both paths live (auto-published / pending-approval) + 101 tests passing.
+
 ## 2026-06-23
 
 - One-click launcher now also starts the Nexus app (:5000), so Ollama + FCC + Whisper + Nexus + cockpit all come up from a single double-click.

@@ -109,6 +109,7 @@ export default function App() {
   const [scheduler, setScheduler] = useState<{
     enabled?: boolean;
     hourLocal?: number;
+    autoApprove?: boolean;
     lastTitle?: string | null;
     nextRunAt?: string | null;
     recent?: Array<{ id: string; title: string; createdAt: string }>;
@@ -460,8 +461,15 @@ export default function App() {
 
   function handleVoiceTranscript(transcript: string) {
     const command = interpretVoiceCommand(transcript);
-    setCommand(command.text);
     setVoiceStatus(`Heard (${command.action}): "${transcript}"`);
+    if (command.action === "approve") {
+      // 100% voice loop: "approve" publishes the pending social draft, else approves the active task.
+      if (nexusPostId) void approveAndPublish();
+      else if (activeTask?.workflow.status === "needs-approval") updateActiveTask("approve");
+      else setVoiceStatus("Nothing is pending approval right now.");
+      return;
+    }
+    setCommand(command.text);
     if (command.action === "mission") void runMissionFromCommand(command.text);
     else if (command.action === "route") void routeAndCreate(command.text);
   }
@@ -507,6 +515,19 @@ export default function App() {
       setSocialStatus(`Publish failed: ${error instanceof Error ? error.message : "error"}`);
     } finally {
       setIsPublishingSocial(false);
+    }
+  }
+
+  async function toggleAutoApprove(enabled: boolean) {
+    try {
+      const response = await fetch("/api/scheduler/auto-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (response.ok) setScheduler(await response.json());
+    } catch {
+      /* ignore */
     }
   }
 
@@ -974,9 +995,19 @@ export default function App() {
                   : "Scheduler is disabled."}
               </p>
             </div>
-            <button type="button" onClick={runScheduledNow} disabled={isRunningSchedule}>
-              {isRunningSchedule ? "Generating…" : "Run daily draft now"}
-            </button>
+            <div className="workspace-actions">
+              <label className="voice-toggle">
+                <input
+                  type="checkbox"
+                  checked={Boolean(scheduler?.autoApprove)}
+                  onChange={(event) => toggleAutoApprove(event.target.checked)}
+                />
+                Auto-approve &amp; publish
+              </label>
+              <button type="button" onClick={runScheduledNow} disabled={isRunningSchedule}>
+                {isRunningSchedule ? "Generating…" : "Run daily draft now"}
+              </button>
+            </div>
           </div>
           {scheduler?.recent?.length ? (
             <ul className="task-list">

@@ -120,9 +120,11 @@ export function createLlmGateway(options: LlmGatewayOptions = {}): LlmGateway {
   }
 
   async function generate(request: LlmGenerateRequest): Promise<LlmGenerateResult> {
-    // One retry absorbs transient upstream (NVIDIA NIM) connection errors.
-    let fccText = await callFcc(request);
-    if (!fccText) fccText = await callFcc(request);
+    // Up to 3 attempts absorb transient upstream (NVIDIA NIM) errors / empty streams.
+    let fccText: string | null = null;
+    for (let attempt = 0; attempt < 3 && !fccText; attempt += 1) {
+      fccText = await callFcc(request);
+    }
     if (fccText) {
       return { status: "complete", text: fccText, provider: "fcc", model: fccModel };
     }
@@ -173,7 +175,9 @@ export function createLlmGateway(options: LlmGatewayOptions = {}): LlmGateway {
 // Detect FCC's upstream-failure payloads, which arrive as a normal 200 stream whose
 // text content is the error message rather than a model answer.
 export function isProviderErrorText(text: string): boolean {
-  return /Provider API request failed|Provider exception:/i.test(text);
+  return /Provider API request failed|Provider exception|Provider stream ended|stream ended without finish_reason|^\s*Request ID:\s*req_/i.test(
+    text,
+  );
 }
 
 // Accumulate the text from an Anthropic Messages stream (SSE). Falls back to parsing

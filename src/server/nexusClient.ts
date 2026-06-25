@@ -24,7 +24,7 @@ export interface NexusHealth {
 
 export interface NexusClient {
   health: () => Promise<NexusHealth>;
-  draftPost: (content: string, accountId: string) => Promise<{ postId: string }>;
+  draftPost: (content: string, accountId: string, platform?: string) => Promise<{ postId: string }>;
   publishPost: (postId: string) => Promise<unknown>;
   requestApproval: (postId: string) => Promise<boolean>;
 }
@@ -88,10 +88,10 @@ export function createNexusClient(options: NexusClientOptions = {}): NexusClient
       }
     },
 
-    async draftPost(content: string, accountId: string): Promise<{ postId: string }> {
+    async draftPost(content: string, accountId: string, platform = "telegram"): Promise<{ postId: string }> {
       const response = await authed("/api/posts", {
         method: "POST",
-        body: JSON.stringify({ content, platforms: [{ platform: "telegram", accountId }] }),
+        body: JSON.stringify({ content, platforms: [{ platform, accountId }] }),
       });
       const payload = (await response.json()) as { data?: { _id?: string }; message?: string };
       if (!response.ok || !payload.data?._id) {

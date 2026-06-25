@@ -492,7 +492,8 @@ export default function App() {
     setIsDraftingSocial(true);
     setSocialStatus("Creating draft in Nexus…");
     try {
-      const { postId } = await nexusClient.draft(socialDraft, socialAccountId);
+      const platform = nexus?.accounts.find((account) => account.id === socialAccountId)?.platform;
+      const { postId } = await nexusClient.draft(socialDraft, socialAccountId, platform);
       setNexusPostId(postId);
       const sent = await nexusClient.requestApproval(postId);
       setSocialStatus(

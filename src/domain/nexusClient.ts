@@ -17,7 +17,7 @@ export interface NexusStatus {
 
 export interface NexusClient {
   health: () => Promise<NexusStatus>;
-  draft: (content: string, accountId: string) => Promise<{ postId: string }>;
+  draft: (content: string, accountId: string, platform?: string) => Promise<{ postId: string }>;
   publish: (postId: string) => Promise<{ ok: boolean; message: string }>;
   requestApproval: (postId: string) => Promise<boolean>;
 }
@@ -39,11 +39,11 @@ export function createNexusClient(fetchImpl: typeof fetch = fetch): NexusClient 
       }
     },
 
-    async draft(content: string, accountId: string): Promise<{ postId: string }> {
+    async draft(content: string, accountId: string, platform?: string): Promise<{ postId: string }> {
       const response = await fetchImpl("/api/nexus/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, accountId }),
+        body: JSON.stringify({ content, accountId, platform }),
       });
       const payload = (await response.json()) as { postId?: string; error?: string };
       if (!response.ok || !payload.postId) {

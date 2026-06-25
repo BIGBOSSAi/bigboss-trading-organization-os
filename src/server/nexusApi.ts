@@ -22,12 +22,12 @@ export function nexusApiPlugin(options: NexusClientOptions = {}): Plugin {
     if (path === "/api/nexus/draft" && req.method === "POST") {
       readBody(req)
         .then((body) => {
-          const { content, accountId } = body as { content?: string; accountId?: string };
+          const { content, accountId, platform } = body as { content?: string; accountId?: string; platform?: string };
           if (!content?.trim() || !accountId) {
             sendJson(res, 400, { error: "content and accountId are required." });
             return;
           }
-          return client.draftPost(content, accountId).then((result) => sendJson(res, 201, result));
+          return client.draftPost(content, accountId, platform).then((result) => sendJson(res, 201, result));
         })
         .catch((error) => sendJson(res, 502, { error: messageOf(error) }));
       return;

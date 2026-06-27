@@ -201,4 +201,19 @@ const templates: Record<AgentId, (task: HermesTaskRecord) => OutputTemplate> = {
     ],
     guardrails: ["Pricing and public launch require human approval.", "No guaranteed income or performance promises."],
   }),
+  happi: (task) => ({
+    title: "Prompt Pack Brief",
+    summary: `Happi will engineer a 200-prompt pack for "${task.command}" (use the Happi panel to generate + export the PDF).`,
+    sections: [
+      {
+        heading: "Pack Plan",
+        bullets: [
+          "200 unique, deduped, ready-to-use prompts for the niche.",
+          "Each prompt has a short use, an example instruction, and an output type.",
+          "Exported as a branded PDF product (sellable).",
+        ],
+      },
+    ],
+    guardrails: ["Generated via deepseek-v4-flash; review before selling."],
+  }),
 };

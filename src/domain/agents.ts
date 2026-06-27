@@ -1,4 +1,4 @@
-export type AgentId = "dean" | "ledger" | "forge" | "voice" | "scout" | "launch";
+export type AgentId = "dean" | "ledger" | "forge" | "voice" | "scout" | "launch" | "happi";
 
 export type RiskLevel = "low" | "medium" | "high";
 
@@ -52,6 +52,13 @@ export const agents: Agent[] = [
     title: "Product Engine",
     mission: "Build offers, funnels, pricing, sales pages, and launch plans.",
     responsibilities: ["Offers", "Funnels", "Pricing", "Lead magnets"],
+  },
+  {
+    id: "happi",
+    name: "Happi",
+    title: "Prompt Engineering",
+    mission: "Generate sellable 200-prompt packs for any niche, exported as a branded PDF product.",
+    responsibilities: ["Prompt packs", "Niche prompts", "Prompt optimization", "PDF products"],
   },
 ];
 

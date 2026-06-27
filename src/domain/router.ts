@@ -7,6 +7,7 @@ export type Intent =
   | "content"
   | "research"
   | "product"
+  | "prompt_pack"
   | "operations";
 
 export interface RouteResult {
@@ -32,6 +33,10 @@ const matchAny = (command: string, keywords: string[]) =>
 
 export function routeCommand(rawCommand: string): RouteResult {
   const command = rawCommand.trim().toLowerCase();
+
+  if (matchAny(command, ["happi", "prompt pack", "prompt engineer", "200 prompts", "prompts for", "prompt for"])) {
+    return buildResult("happi", "prompt_pack", command);
+  }
 
   if (matchAny(command, ["mt5", "bot", "backtest", "pine", "ea", "live ready", "strategy tester"])) {
     return buildResult("forge", "bot_research", command);

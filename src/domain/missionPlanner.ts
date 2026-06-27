@@ -12,6 +12,7 @@ const agentKeywords: Record<AgentId, string[]> = {
   voice: ["publish", "linkedin", "substack", "youtube", "email", "post", "script", "content"],
   launch: ["offer", "funnel", "sales page", "pricing", "price", "lead magnet", "launch", "product", "$"],
   scout: ["research", "trend", "pain point", "audience", "market"],
+  happi: ["happi", "prompt pack", "prompts", "prompt engineer"],
 };
 
 const agentIntent: Record<AgentId, Intent> = {
@@ -21,6 +22,7 @@ const agentIntent: Record<AgentId, Intent> = {
   voice: "content",
   scout: "research",
   launch: "product",
+  happi: "prompt_pack",
 };
 
 // Packaging agents consume the work of the knowledge agents, so they run later.

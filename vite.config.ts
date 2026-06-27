@@ -5,6 +5,7 @@ import { llmApiPlugin } from "./src/server/llmApi";
 import { transcribeApiPlugin } from "./src/server/transcribeApi";
 import { nexusApiPlugin } from "./src/server/nexusApi";
 import { schedulerApiPlugin } from "./src/server/schedulerApi";
+import { happiApiPlugin } from "./src/server/happiApi";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -22,6 +23,14 @@ export default defineConfig(({ mode }) => {
         ollamaModel: env.OLLAMA_MODEL,
       }),
       transcribeApiPlugin({ whisperUrl: env.WHISPER_URL }),
+      happiApiPlugin({
+        memoryRoot,
+        fccBaseUrl: env.FCC_BASE_URL,
+        fccModel: env.FCC_MODEL,
+        fccApiKey: env.FCC_API_KEY,
+        ollamaBaseUrl: env.OLLAMA_BASE_URL,
+        ollamaModel: env.OLLAMA_MODEL,
+      }),
       nexusApiPlugin({
         baseUrl: env.NEXUS_URL,
         email: env.NEXUS_EMAIL,

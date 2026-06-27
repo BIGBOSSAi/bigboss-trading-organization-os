@@ -23,6 +23,8 @@ import { createTranscriptionController } from "./domain/transcriptionClient";
 import { buildProduct } from "./domain/productBuilder";
 import { productTypes, type BuiltProduct } from "./domain/productTemplates";
 import { createNexusClient, type NexusStatus } from "./domain/nexusClient";
+import { createHappiClient, type PromptPack } from "./domain/happiClient";
+import { renderPackHtml } from "./domain/promptPack";
 import { routeCommand, type RouteResult } from "./domain/router";
 import { resolveTaskSelection } from "./domain/taskSelection";
 
@@ -40,6 +42,16 @@ const llmClient = createLlmClient();
 const speech = createSpeechController();
 const transcription = createTranscriptionController();
 const nexusClient = createNexusClient();
+const happiClient = createHappiClient();
+
+function happiTopicFrom(command: string): string {
+  return (
+    command
+      .replace(/^\s*happi[\s,:.-]*/i, "")
+      .replace(/^(i\s+want|please|create|make|give\s+me|generate|build)\s+(an?\s+|the\s+)?/i, "")
+      .trim() || command.trim()
+  );
+}
 
 function durableToLocalMemoryEntry(entry: DurableMemoryEntry): LocalMemoryEntry {
   return {
@@ -103,6 +115,10 @@ export default function App() {
   const [socialStatus, setSocialStatus] = useState("");
   const [isDraftingSocial, setIsDraftingSocial] = useState(false);
   const [isPublishingSocial, setIsPublishingSocial] = useState(false);
+  const [happiTopic, setHappiTopic] = useState("");
+  const [happiPack, setHappiPack] = useState<PromptPack | null>(null);
+  const [isGeneratingPack, setIsGeneratingPack] = useState(false);
+  const [happiStatus, setHappiStatus] = useState("");
   const [vaultEntries, setVaultEntries] = useState<DurableMemoryEntry[]>([]);
   const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
   const [isLoadingVault, setIsLoadingVault] = useState(false);
@@ -214,6 +230,11 @@ export default function App() {
     const trimmed = rawCommand.trim();
     if (!trimmed || isRouting) return;
     setCommand(trimmed);
+    // Happi commands ("Happi, <niche>") generate a prompt pack instead of a normal task.
+    if (routeCommand(trimmed).agent.id === "happi") {
+      void generatePackFor(happiTopicFrom(trimmed));
+      return;
+    }
     setIsRouting(true);
 
     try {
@@ -563,6 +584,45 @@ export default function App() {
     }
   }
 
+  async function generatePackFor(topic: string) {
+    const clean = topic.trim();
+    if (!clean || isGeneratingPack) return;
+    setHappiTopic(clean);
+    setHappiPack(null);
+    setIsGeneratingPack(true);
+    setHappiStatus(`Happi is engineering 200 prompts for "${clean}" (~1–2 min on flash)…`);
+    try {
+      const pack = await happiClient.generate(clean);
+      setHappiPack(pack);
+      setHappiStatus(`Done — ${pack.count} prompts for "${pack.topic}". Save as PDF below (saved to vault too).`);
+      speakIfEnabled(`Happi finished ${pack.count} prompts for ${pack.topic}.`);
+    } catch (error) {
+      setHappiStatus(`Happi failed: ${error instanceof Error ? error.message : "error"}`);
+    } finally {
+      setIsGeneratingPack(false);
+    }
+  }
+
+  function packHtml(): string {
+    return happiPack ? renderPackHtml(happiPack.topic, happiPack.items) : "";
+  }
+
+  function printPackPdf() {
+    const html = packHtml();
+    if (!html) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 500);
+  }
+
+  function downloadPackHtml() {
+    if (!happiPack) return;
+    downloadText(`prompt-pack-${happiPack.topic.replace(/\s+/g, "-").toLowerCase()}.html`, packHtml());
+  }
+
   function toggleListening() {
     if (isListening) {
       if (whisperRecordingRef.current) transcription.stop();
@@ -878,6 +938,46 @@ export default function App() {
                   ))}
                 </ul>
               </div>
+            </>
+          ) : null}
+        </section>
+      </section>
+
+      <section className="workspace-grid">
+        <section className="panel">
+          <div className="workspace-heading">
+            <div>
+              <p className="panel-label">Happi — Prompt Pack Engine</p>
+              <h2>{happiPack ? `${happiPack.count} prompts · ${happiPack.topic}` : "200-prompt pack generator"}</h2>
+              <p>Enter a niche → Happi engineers a sellable 200-prompt pack ($29 product). Or route: "Happi, Instagram fashion model".</p>
+            </div>
+            <div className="workspace-actions">
+              <button type="button" onClick={() => generatePackFor(happiTopic)} disabled={isGeneratingPack || !happiTopic.trim()}>
+                {isGeneratingPack ? "Generating…" : "Generate 200 prompts"}
+              </button>
+            </div>
+          </div>
+          <input
+            className="happi-input"
+            value={happiTopic}
+            onChange={(event) => setHappiTopic(event.target.value)}
+            placeholder="niche, e.g. Instagram fashion model"
+          />
+          {happiStatus ? <p className="export-status">{happiStatus}</p> : null}
+          {happiPack ? (
+            <>
+              <div className="workspace-actions" style={{ marginTop: "10px" }}>
+                <button type="button" onClick={printPackPdf}>🧾 Open &amp; Save as PDF</button>
+                <button type="button" onClick={downloadPackHtml}>Download .html</button>
+              </div>
+              <ul className="task-list" style={{ marginTop: "10px" }}>
+                {happiPack.items.slice(0, 5).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.id}</strong> {item.prompt}
+                  </li>
+                ))}
+              </ul>
+              <p className="export-status">Preview (first 5 of {happiPack.count}). Full pack is in the PDF/HTML + saved to your vault.</p>
             </>
           ) : null}
         </section>

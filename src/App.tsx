@@ -590,9 +590,11 @@ export default function App() {
     setHappiTopic(clean);
     setHappiPack(null);
     setIsGeneratingPack(true);
-    setHappiStatus(`Happi is engineering 200 prompts for "${clean}" (~1–2 min on flash)…`);
+    setHappiStatus(`Happi is engineering 200 prompts for "${clean}" (~3–5 min)…`);
     try {
-      const pack = await happiClient.generate(clean);
+      const pack = await happiClient.generate(clean, (seconds) =>
+        setHappiStatus(`Happi is engineering 200 prompts for "${clean}"… ${seconds}s elapsed (~3–5 min).`),
+      );
       setHappiPack(pack);
       setHappiStatus(`Done — ${pack.count} prompts for "${pack.topic}". Save as PDF below (saved to vault too).`);
       speakIfEnabled(`Happi finished ${pack.count} prompts for ${pack.topic}.`);

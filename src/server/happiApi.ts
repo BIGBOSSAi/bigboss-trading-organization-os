@@ -49,33 +49,64 @@ export function happiApiPlugin(options: HappiOptions): Plugin {
     return items;
   }
 
+  // Generation takes minutes (the provider serializes calls), so run it as a background
+  // job and let the client poll — the request never hangs.
+  type Job = { status: "running" | "done" | "error"; topic: string; count: number; items?: PromptItem[]; error?: string };
+  const jobs = new Map<string, Job>();
+
+  function startJob(topic: string): string {
+    const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    jobs.set(id, { status: "running", topic, count: 0 });
+    void (async () => {
+      try {
+        const items = await generatePack(topic, 200);
+        const createdAt = new Date().toISOString();
+        store.writeEntry({
+          id: `promptpack-${createdAt}`,
+          folderId: "organization",
+          title: `Prompt Pack: ${topic} (${items.length})`,
+          summary: renderPackMarkdown(topic, items),
+          agentId: "happi",
+          sourceTaskId: `promptpack-${createdAt}`,
+          createdAt,
+          tags: ["prompt-pack", topic],
+        });
+        jobs.set(id, { status: "done", topic, count: items.length, items });
+      } catch (error) {
+        jobs.set(id, { status: "error", topic, count: 0, error: messageOf(error) });
+      }
+    })();
+    return id;
+  }
+
   const handler: Connect.NextHandleFunction = (req, res, next) => {
     const path = (req.url ?? "").split("?")[0];
+
     if (path === "/api/happi/generate" && req.method === "POST") {
       readBody(req)
-        .then(async (body) => {
+        .then((body) => {
           const topic = (body as { topic?: string }).topic?.trim();
           if (!topic) {
             sendJson(res, 400, { error: "topic is required." });
             return;
           }
-          const items = await generatePack(topic, 200);
-          const createdAt = new Date().toISOString();
-          store.writeEntry({
-            id: `promptpack-${createdAt}`,
-            folderId: "organization",
-            title: `Prompt Pack: ${topic} (${items.length})`,
-            summary: renderPackMarkdown(topic, items),
-            agentId: "happi",
-            sourceTaskId: `promptpack-${createdAt}`,
-            createdAt,
-            tags: ["prompt-pack", topic],
-          });
-          sendJson(res, 200, { topic, count: items.length, items });
+          sendJson(res, 202, { jobId: startJob(topic) });
         })
         .catch((error) => sendJson(res, 500, { error: messageOf(error) }));
       return;
     }
+
+    if (path === "/api/happi/status" && req.method === "GET") {
+      const jobId = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get("jobId") ?? "";
+      const job = jobs.get(jobId);
+      if (!job) {
+        sendJson(res, 404, { error: "job not found" });
+        return;
+      }
+      sendJson(res, 200, job);
+      return;
+    }
+
     next();
   };
 
